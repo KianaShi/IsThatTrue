@@ -964,7 +964,7 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .ac-choice:hover { border-color: var(--acc-soft); color: var(--snow); }
 .ac-choice.selected { border-color: var(--acc-bright); background: rgba(212, 0, 39, .18); color: var(--snow); }
 
-/* ── travel loader: five seconds between briefing and scene ──── */
+/* ── travel loader: a short passage between briefing and scene ──── */
 
 #travel {
 	position: fixed;
@@ -1011,8 +1011,8 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .travel-dots i:nth-child(3) { animation-delay: .7s; }
 @keyframes travelDot { 0%, 60%, 100% { opacity: 0; } 30% { opacity: 1; } }
 
-/* The thin line underneath fills over exactly the five seconds the
-   passage lasts — a quiet promise of when the scene opens. */
+/* The thin line underneath fills over exactly the time the passage lasts
+   (TRAVEL_MS in main.js) — a quiet promise of when the scene opens. */
 .travel-bar {
 	position: absolute;
 	left: 0;
@@ -1021,7 +1021,7 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 	width: 100%;
 	background: var(--acc);
 	transform-origin: left;
-	animation: travelBar 5s linear forwards;
+	animation: travelBar 1.5s linear forwards;
 }
 @keyframes travelBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 

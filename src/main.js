@@ -607,6 +607,10 @@ function dealTiles(deck) {
 
 let travelTimer = 0;
 
+// How long the "approaching the scene" passage lasts. Keep in step with the
+// .travel-bar animation in ui.css.
+const TRAVEL_MS = 1500;
+
 function beginTravel() {
 	menu.hide();
 	document.getElementById('travel').hidden = false;
@@ -614,7 +618,7 @@ function beginTravel() {
 	travelTimer = setTimeout(() => {
 		document.getElementById('travel').hidden = true;
 		startGame();
-	}, 5000);
+	}, TRAVEL_MS);
 }
 
 function startGame() {
