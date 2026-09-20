@@ -6,8 +6,9 @@ import { squareToWorld } from './board.js';
 
 // Piece layer for the evidence board: one ivory pawn per dealt square.
 // Each Dig In is a real upgrade — pawn, then knight, bishop, rook — and each
-// step is cut in obsidian instead of bone and stands a little bigger than the
-// last, so how far a piece has been dug reads at a glance.
+// step stands a little bigger than the last, so how far a piece has been dug
+// reads at a glance. On its first upgrade a piece rolls black (obsidian) or
+// white (ivory) at random and keeps that colour through later tiers.
 const TIERS = [
 	{ type: PAWN, scale: 1 },
 	{ type: KNIGHT, scale: 1.25 },
@@ -34,17 +35,19 @@ export function createEvidencePieces(scene) {
 		return mesh;
 	}
 
-	// Move a piece up to the given tier: new shape, obsidian, and larger.
+	// Move a piece up to the given tier: new shape, larger, and (once) a random side.
 	function upgrade(sq, tier) {
 		const mesh = bySquare.get(sq);
 		if (!mesh) return;
 		const t = TIERS[Math.min(Math.max(tier, 0), MAX_TIER)];
 		mesh.geometry = geometries[t.type];
 		mesh.scale.setScalar(t.scale);
-		if (tier > 0 && !mesh.userData.obsidian) {
-			mesh.material.dispose();
-			mesh.material = pieceMaterial('obsidian');
-			mesh.userData.obsidian = true;
+		if (tier > 0 && !mesh.userData.side) {
+			mesh.userData.side = Math.random() < 0.5 ? 'ivory' : 'obsidian';
+			if (mesh.userData.side === 'obsidian') {
+				mesh.material.dispose();
+				mesh.material = pieceMaterial('obsidian');
+			}
 		}
 	}
 
