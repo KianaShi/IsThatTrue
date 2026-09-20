@@ -341,7 +341,7 @@ function renderCaseboard() {
 	document.querySelector('[data-slot="sb-drawer"]').hidden = !sbBasketOpen;
 	const basketBtn = document.querySelector('.sb-basket-btn');
 	basketBtn.setAttribute('aria-expanded', String(sbBasketOpen));
-	basketBtn.setAttribute('aria-label', sbBasketOpen ? 'Close the basket' : 'Open the basket');
+	basketBtn.setAttribute('aria-label', `${sbBasketOpen ? 'Close' : 'Open'} the basket (${held.length})`);
 	document.querySelector('[data-slot="sb-drawer-title"]').textContent =
 		held.length ? `Basket · tap a piece to place it under ${s.name.split(' ')[0]}` : 'Basket';
 	document.querySelector('[data-slot="cb-basket"]').innerHTML = held.length
