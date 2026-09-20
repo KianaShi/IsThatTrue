@@ -1,4 +1,4 @@
-// Every sound is synthesised on the spot — no assets, no loading.
+// Synthesised effects and ambience, plus Leo's recorded investigation loop.
 // Two independent channels: SFX (the `enabled` flag) and an ambient score
 // (the `musicEnabled` flag) so the settings toggles stay honest.
 export function createAudio() {
@@ -127,13 +127,87 @@ export function createAudio() {
 		} catch { /* already gone */ }
 	}
 
+	// The recorded loop takes over during an investigation. A generation token
+	// prevents an old play promise or fade from affecting a newer session.
+	const TRACK_SRC = new URL('../../odyssey_60s_loop.wav', import.meta.url).href;
+	const TRACK_VOLUME = 0.55;
+	let track = null;
+	let trackWanted = false;
+	let trackStarting = false;
+	let trackGeneration = 0;
+	let fadeTimer = 0;
+
+	function cancelTrackTransition() {
+		clearInterval(fadeTimer);
+		trackStarting = false;
+		return ++trackGeneration;
+	}
+
+	function fadeTrack(target, ms, generation, done = () => {}) {
+		clearInterval(fadeTimer);
+		const from = track.volume;
+		const started = performance.now();
+		fadeTimer = setInterval(() => {
+			if (generation !== trackGeneration) return;
+			const k = Math.min(1, (performance.now() - started) / ms);
+			track.volume = Math.max(0, Math.min(1, from + (target - from) * k));
+			if (k === 1) { clearInterval(fadeTimer); done(); }
+		}, 40);
+	}
+
+	function playTrack() {
+		if (!musicOn || !trackWanted || trackStarting) return;
+		const generation = cancelTrackTransition();
+		stopMusic();
+		if (!track) { track = new Audio(TRACK_SRC); track.loop = true; }
+		track.currentTime = 0;
+		track.volume = 0;
+		trackStarting = true;
+		track.play().then(() => {
+			if (generation !== trackGeneration) return;
+			trackStarting = false;
+			fadeTrack(TRACK_VOLUME, 1200, generation);
+		}).catch(() => {
+			if (generation !== trackGeneration) return;
+			trackStarting = false;
+			startMusic(); // Keep ambience if the file cannot play.
+		});
+	}
+
+	function haltTrack(immediate = false) {
+		const generation = cancelTrackTransition();
+		if (!track) return;
+		if (immediate) { track.pause(); track.volume = 0; return; }
+		fadeTrack(0, 900, generation, () => track.pause());
+	}
+
 	return {
 		set enabled(v) { on = v; },
 		get enabled() { return on; },
-		set musicEnabled(v) { musicOn = v; if (v) startMusic(); else stopMusic(); },
+		set musicEnabled(v) {
+			if (musicOn === v) return;
+			musicOn = v;
+			if (!v) { stopMusic(); haltTrack(true); return; }
+			if (trackWanted) playTrack(); else startMusic();
+		},
 		get musicEnabled() { return musicOn; },
 		// Audio contexts need a user gesture; call once on the first tap.
-		unlock() { if (musicOn) startMusic(); },
+		unlock() {
+			if (!musicOn) return;
+			if (trackWanted) { if (!track || track.paused) playTrack(); }
+			else startMusic();
+		},
+		startTrack() {
+			if (trackWanted && (trackStarting || (track && !track.paused))) return;
+			trackWanted = true;
+			playTrack();
+		},
+		stopTrack() {
+			if (!trackWanted) return;
+			trackWanted = false;
+			haltTrack();
+			if (musicOn) startMusic();
+		},
 
 		tick() { tone(2100, { dur: 0.05, gain: 0.03 }); },
 		confirm() { tone(680, { dur: 0.07, gain: 0.045 }); tone(1020, { dur: 0.09, gain: 0.04, delay: 0.06 }); },

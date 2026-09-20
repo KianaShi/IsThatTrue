@@ -445,7 +445,7 @@ const menu = createMenu({
 		else if (act === 'level') pickLevel(el.dataset.id);
 		else if (act === 'settings') menu.show('settings', { push: true });
 		else if (act === 'continue') menu.show('difficulty', { push: true });
-		else if (act === 'begin') { clearInterval(countdownTimer); beginTravel(); }
+		else if (act === 'begin') { clearInterval(countdownTimer); audio.startTrack(); beginTravel(); }
 		else if (act === 'retry') startGame();
 		else if (act === 'quit') toTitle();
 		else if (act === 'close') menu.show('title');
@@ -632,6 +632,7 @@ function startGame() {
 	dealTiles(deck);
 	renderStars();
 	playing = true;
+	audio.startTrack();
 	menu.hide();
 	hud.show();
 	hud.setCase(s.name, l.label);
@@ -643,6 +644,7 @@ function startGame() {
 
 function toTitle() {
 	playing = false;
+	audio.stopTrack();
 	clearTimeout(travelTimer);
 	document.getElementById('travel').hidden = true;
 	tiles.clear();
@@ -658,6 +660,7 @@ function toTitle() {
 
 function endCase(solved) {
 	playing = false;
+	audio.stopTrack();
 	if (solved) audio.solve(); else audio.fail();
 
 	const titleEl = document.querySelector('[data-slot="result-title"]');
