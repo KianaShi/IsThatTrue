@@ -73,7 +73,7 @@ const PROFILES = {
 	'1-0-1': ['Efficient Reasoner', 'The player built a coherent argument from a limited subset of evidence and still reached the correct conclusion.'],
 	'0-1-1': ['Misled by Ambiguity', 'The player processed relevant evidence coherently but was ultimately misled by ambiguity or conflicting information.'],
 	'1-1-0': ['Right Answer, Loose Argument', 'The player found the important evidence and reached the correct answer, but their board does not fully support the conclusion.'],
-	'0-0-0': ['Lost in the Snow', 'The player neither found the key evidence nor built a consistent argument, and reached the wrong conclusion.']
+	'0-0-0': ['Back to Square One', 'The player neither found the key evidence nor built a consistent argument, and reached the wrong conclusion.']
 };
 
 /**
@@ -87,7 +87,7 @@ const PROFILES = {
  * @param {number} run.elapsed - Seconds spent.
  * @param {number|null} run.limit - Time limit, null if untimed.
  * @param {boolean} run.timedOut - Whether the clock ran out.
- * @returns {{accuracy: {right: number, total: number, percent: number}, measures: Array<{name: string, question: string, label: string, note: string}>, profile: {title: string, text: string}}}
+ * @returns {{accuracy: {right: number, total: number, percent: number}, measures: Array<{name: string, label: string, note: string}>, profile: {title: string, text: string}}}
  */
 export function evaluate({ questions, answers, assignments, deck, chosen, elapsed, limit, timedOut }) {
 	const outcome = scoreOutcome(questions, answers);
@@ -101,10 +101,10 @@ export function evaluate({ questions, answers, assignments, deck, chosen, elapse
 	return {
 		accuracy: { right, total: questions.length, percent: Math.round(outcome.score * 100) },
 		measures: [
-			{ name: 'Outcome Accuracy', question: 'Did they reach the correct conclusion?', label: outcome.correct ? 'Correct' : 'Incorrect', note: outcome.note },
-			{ name: 'Evidence Selection', question: 'Did they identify the truly relevant information?', label: grade(selection), note: selection.note },
-			{ name: 'Reasoning Coherence', question: 'Did their conclusion follow from the evidence they chose?', label: grade(reasoning), note: reasoning.note },
-			{ name: 'Time', question: 'Quick enough?', label: time.label, note: time.note }
+			{ name: 'Outcome Accuracy', label: `${Math.round(outcome.score * 100)}%`, note: outcome.note },
+			{ name: 'Evidence Selection', label: grade(selection), note: selection.note },
+			{ name: 'Reasoning Coherence', label: grade(reasoning), note: reasoning.note },
+			{ name: 'Time', label: time.label, note: time.note }
 		],
 		profile: { title, text }
 	};

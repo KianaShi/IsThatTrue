@@ -687,12 +687,7 @@ function endCase(solved, reason) {
 	playing = false;
 	if (solved) audio.solve(); else audio.fail();
 
-	const titleEl = document.querySelector('[data-slot="result-title"]');
-	titleEl.textContent = solved ? 'CASE SOLVED' : 'CASE COLD';
-	titleEl.classList.toggle('cold', !solved);
-	menu.slot('result-over', reason === 'timeout'
-		? 'Time ran out · the snow covered the rest'
-		: solved ? 'The snow gives up its secret' : 'Answers submitted · the trail went cold');
+	menu.slot('result-over', reason === 'timeout' ? 'Time ran out' : 'Answers submitted');
 
 	const report = evaluate({
 		questions: QUESTIONS,
@@ -704,11 +699,19 @@ function endCase(solved, reason) {
 		limit: timerOn() ? level().time : null,
 		timedOut: reason === 'timeout'
 	});
+	const { right, total, percent } = report.accuracy;
+	const RING = 2 * Math.PI * 52;
 	document.querySelector('[data-slot="result-eval"]').innerHTML = `
 		<p class="eval-profile">${report.profile.title}</p>
-		<p class="eval-text">${report.profile.text}</p>
+		<div class="eval-ring">
+			<svg viewBox="0 0 120 120" aria-hidden="true">
+				<circle class="eval-ring-track" cx="60" cy="60" r="52"/>
+				<circle class="eval-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="${RING.toFixed(1)}" stroke-dashoffset="${(RING * (1 - percent / 100)).toFixed(1)}"/>
+			</svg>
+			<div class="eval-ring-label"><b>${percent}%</b><small>${right} of ${total} correct</small></div>
+		</div>
 		<div class="eval-measures">${report.measures.map(x => `
-			<div class="eval-row"><div><b>${x.name}</b><small>${x.question}</small></div><div class="eval-grade"><b>${x.label}</b><small>${x.note}</small></div></div>`).join('')}
+			<div class="eval-row"><b>${x.name}</b><div class="eval-grade"><b>${x.label}</b><small>${x.note}</small></div></div>`).join('')}
 		</div>`;
 
 	const starred = [...tiles.values()].filter(t => t.starred).length;
