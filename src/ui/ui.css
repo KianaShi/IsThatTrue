@@ -513,16 +513,6 @@ body.playing #hud { opacity: 1; }
 	gap: 5px;
 }
 .hud-story { font-size: 10px; font-weight: 500; letter-spacing: .34em; text-transform: uppercase; color: var(--snow); }
-.hud-diff {
-	justify-self: start;
-	font-size: 8.5px;
-	letter-spacing: .34em;
-	text-transform: uppercase;
-	color: var(--acc-bright);
-	border: 1px solid var(--acc-soft);
-	border-radius: var(--r);
-	padding: 3px 7px;
-}
 .hud-clues { font-size: 9.5px; letter-spacing: .3em; text-transform: uppercase; color: var(--faint); }
 
 .hud-mid {
@@ -545,15 +535,22 @@ body.playing #hud { opacity: 1; }
 @keyframes beat { 50% { opacity: .45; } }
 .hud-mid.no-timer .hud-timer { display: none; }
 
-.hud-pips { display: flex; gap: 7px; }
-.hud-pips i {
-	width: 7px;
-	height: 7px;
-	border-radius: 50%;
-	border: 1px solid var(--faint);
-	transition: background .3s, border-color .3s, box-shadow .3s;
+/* The countdown fuse: a line that burns down to nothing, with a spark at the lit end. */
+.hud-fuse { position: relative; width: min(46vw, 240px); height: 2px; border-radius: 1px; background: rgba(238, 243, 251, .14); }
+.hud-fuse-line {
+	position: absolute; inset: 0 auto 0 0; width: 100%; border-radius: 1px;
+	background: linear-gradient(90deg, rgba(238, 243, 251, .3), var(--snow));
+	transition: width .25s linear;
 }
-.hud-pips i.got { background: var(--acc); border-color: var(--acc-bright); box-shadow: 0 0 10px var(--acc-soft); }
+.hud-fuse-line::after {
+	content: ''; position: absolute; right: -4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%;
+	background: #ffe2b0; box-shadow: 0 0 6px 2px #ff9a3c, 0 0 16px 5px rgba(255, 110, 40, .55);
+	animation: fuseSpark .16s steps(2) infinite alternate;
+}
+.hud-fuse.low .hud-fuse-line { background: linear-gradient(90deg, rgba(255, 56, 96, .3), var(--acc-bright)); }
+@keyframes fuseSpark { to { transform: scale(1.4); opacity: .75; } }
+@media (prefers-reduced-motion: reduce) { .hud-fuse-line::after { animation: none; } }
+.hud-mid.no-timer .hud-fuse { display: none; }
 
 .tb {
 	width: 40px;
@@ -966,7 +963,7 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .ac-choice:hover { border-color: var(--acc-soft); color: var(--snow); }
 .ac-choice.selected { border-color: var(--acc-bright); background: rgba(212, 0, 39, .18); color: var(--snow); }
 
-/* ── travel loader: five seconds between briefing and scene ──── */
+/* ── travel loader: a short passage between briefing and scene ──── */
 
 #travel {
 	position: fixed;
@@ -1013,8 +1010,8 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .travel-dots i:nth-child(3) { animation-delay: .7s; }
 @keyframes travelDot { 0%, 60%, 100% { opacity: 0; } 30% { opacity: 1; } }
 
-/* The thin line underneath fills over exactly the five seconds the
-   passage lasts — a quiet promise of when the scene opens. */
+/* The thin line underneath fills over exactly the time the passage lasts
+   (TRAVEL_MS in main.js) — a quiet promise of when the scene opens. */
 .travel-bar {
 	position: absolute;
 	left: 0;
@@ -1023,7 +1020,7 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 	width: 100%;
 	background: var(--acc);
 	transform-origin: left;
-	animation: travelBar 5s linear forwards;
+	animation: travelBar 1.5s linear forwards;
 }
 @keyframes travelBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
@@ -1128,3 +1125,23 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
  .eval-row { grid-template-columns: 1fr; gap: 5px; }
  .screen[data-screen="result"] .col { width: 90vw; }
 }
+/* Title screen: the lone Game Start button rests white and only turns red under the pointer,
+   so the keyboard selection state (.sel) is not shown here. */
+[data-menu="title"] .mi { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .75); color: #fff; }
+[data-menu="title"] .mi i { width: 0; }
+[data-menu="title"] .mi .arr { color: #fff; }
+[data-menu="title"] .mi:hover { background: rgba(212, 0, 39, .30); border-color: var(--acc-bright); }
+[data-menu="title"] .mi:hover i { width: 20px; }
+[data-menu="title"] .mi:hover .arr { color: var(--acc-bright); }
+
+/* Story, briefing and launch screens: nothing is lit until the pointer is over it, so the
+   keyboard selection (.sel) and the saved story (.picked) are not shown here. */
+[data-menu="story"] .mi.card { background: rgba(4, 8, 16, .42); border-color: var(--ghost); color: var(--dim); }
+[data-menu="story"] .mi.card:hover { background: rgba(212, 0, 39, .18); border-color: var(--acc-bright); }
+[data-menu="story"] .mi.card .picked-tag { display: none; }
+[data-menu="casefile"] .mi.primary, [data-menu="intro"] .mi.primary { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .75); color: #fff; }
+[data-menu="casefile"] .mi.primary:hover, [data-menu="intro"] .mi.primary:hover { background: rgba(212, 0, 39, .30); border-color: var(--acc-bright); }
+[data-menu="story"] .mi i, [data-menu="casefile"] .mi i, [data-menu="intro"] .mi i { width: 0; }
+[data-menu="casefile"] .mi:hover i, [data-menu="intro"] .mi:hover i { width: 20px; }
+[data-menu="casefile"] .mi .arr, [data-menu="intro"] .mi .arr { color: #fff; }
+[data-menu="casefile"] .mi:hover .arr, [data-menu="intro"] .mi:hover .arr { color: var(--acc-bright); }

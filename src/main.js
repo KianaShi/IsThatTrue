@@ -9,7 +9,7 @@ import { createProps } from './world/props.js';
 import { createBoard, worldToSquare } from './game/board.js';
 import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
-import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
+import { STORIES, LEVEL, fmt, buildDeck } from './game/cases.js';
 import { QUESTIONS } from './game/questions.js';
 import { renderCaseReport } from './ui/case-report.js';
 import { createHud } from './ui/hud.js';
@@ -124,7 +124,7 @@ function doDig() {
 	const levels = tile.digLevels || [];
 	const max = Math.min(levels.length, MAX_TIER);
 	if (tile.dugLevel >= max) return;
-	if (tile.dugLevel === 0) { dugCount++; hud.setClues(dugCount, needed); }
+	if (tile.dugLevel === 0) dugCount++;
 	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
@@ -454,7 +454,6 @@ document.querySelector('[data-slot="suspectboard"]').addEventListener('click', e
 });
 
 const story = () => STORIES[settings.story] || STORIES.s1;
-const level = () => LEVELS[settings.level] || LEVELS.easy;
 const timerOn = () => settings.timer === 'on';
 
 // ── menu ─────────────────────────────────────────────────────────
@@ -473,11 +472,10 @@ const menu = createMenu({
 	 */
 	onAction: (act, el) => {
 		if (act === 'stories') menu.show('story', { push: true });
-		else if (act === 'start') menu.show('difficulty', { push: true });
+		else if (act === 'start') menu.show('story', { push: true });
 		else if (act === 'story') pickStory(el.dataset.id);
-		else if (act === 'level') pickLevel(el.dataset.id);
 		else if (act === 'settings') menu.show('settings', { push: true });
-		else if (act === 'continue') menu.show('difficulty', { push: true });
+		else if (act === 'continue') openIntro();
 		else if (act === 'begin') { clearInterval(countdownTimer); beginTravel(); }
 		else if (act === 'quit') toTitle();
 		else if (act === 'close') menu.show('title');
@@ -523,7 +521,7 @@ function fillCasefile(s) {
 	document.querySelector('[data-slot="cf-mission"]').innerHTML =
 		b.mission.map(m => `<p class="mission-line">${m}</p>`).join('');
 	document.querySelector('[data-slot="cf-mechanics"]').innerHTML =
-		b.mechanics.replace(/(Dig In|Hold|Discard|5 minutes)/g, '<b>$1</b>');
+		b.mechanics.replace(/(Dig In|Add to Basket|Discard|5 minutes)/g, '<b>$1</b>');
 }
 
 // ── launch countdown ───────────────────────────────────────────
@@ -532,14 +530,11 @@ let countdownTimer = null;
 
 function fillIntro() {
 	const s = story();
-	const l = level();
 	menu.slot('intro-over', `Case File · ${s.label}`);
 	menu.slot('intro-title', s.name);
 	document.querySelector('[data-slot="intro-meta"]').innerHTML = [
 		['Case', s.name],
-		['Difficulty', l.label],
-		['Evidence', `${l.clues} clues hidden at the scene`],
-		['Time', timerOn() ? `${fmt(l.time)} — every piece of information costs attention` : 'No time limit']
+		['Time', timerOn() ? `${fmt(LEVEL.time)} — every piece of information costs attention` : 'No time limit']
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
 }
 
@@ -567,9 +562,11 @@ function startCountdown() {
 	}, 1000);
 }
 
-function pickLevel(id) {
-	settings.level = id;
-	menu.save();
+/**
+ * Continue from the case briefing: fill the launch screen and start its countdown.
+ * @returns {void}
+ */
+function openIntro() {
 	fillIntro();
 	menu.show('intro', { push: true });
 	startCountdown();
@@ -644,6 +641,10 @@ function dealTiles(deck) {
 
 let travelTimer = 0;
 
+// How long the "approaching the scene" passage lasts. Keep in step with the
+// .travel-bar animation in ui.css.
+const TRAVEL_MS = 1500;
+
 function beginTravel() {
 	menu.hide();
 	document.getElementById('travel').hidden = false;
@@ -651,7 +652,7 @@ function beginTravel() {
 	travelTimer = setTimeout(() => {
 		document.getElementById('travel').hidden = true;
 		startGame();
-	}, 5000);
+	}, TRAVEL_MS);
 }
 
 /**
@@ -662,21 +663,20 @@ function beginTravel() {
  */
 function startGame() {
 	const s = story();
-	const l = level();
 	const deck = buildDeck(s);
 	needed = deck.length;
 	dugCount = 0;
 	discardedCount = 0;
 	elapsed = 0;
-	timeLeft = l.time;
+	timeLeft = LEVEL.time;
 	dealTiles(deck);
 	renderStars();
 	playing = true;
 	menu.hide();
 	hud.show();
-	hud.setCase(s.name, l.label);
-	hud.setClues(0, needed);
-	hud.setTimer(timerOn() ? timeLeft : null);
+	hud.setCase(s.name);
+	hud.setClues(needed);
+	hud.setTimer(timerOn() ? timeLeft : null, LEVEL.time);
 	hud.setHint('Drag to look around · Tap a piece to examine it');
 	stage.setAttract(false);
 }
@@ -714,7 +714,7 @@ function endCase(solved, reason = 'submitted') {
 	menu.slot('result-over', reason === 'timeout' ? 'Time ran out · case review' : 'Answers submitted · case review');
 	const records = [...tiles.values(), ...discardedTiles.values()];
 	renderCaseReport(document.querySelector('[data-slot="case-report"]'), {
-		records, questions: QUESTIONS, answers: accuseAnswers, solutionAvailable: story() === STORIES.s1, elapsed, limit: timerOn() ? level().time : null, timedOut: reason === 'timeout'
+		records, questions: QUESTIONS, answers: accuseAnswers, solutionAvailable: story() === STORIES.s1, elapsed, limit: timerOn() ? LEVEL.time : null, timedOut: reason === 'timeout'
 	});
 	document.querySelector('[data-slot="result-stats"]').innerHTML = [
 		['Case', story().name], ['Evidence dug', `${dugCount} / ${needed}`],
@@ -841,16 +841,15 @@ stage.onUpdate((dt, time) => {
 		timerPaint += dt;
 		if (timerPaint > 0.2) {
 			timerPaint = 0;
-			if (timerOn()) hud.setTimer(timeLeft);
+			if (timerOn()) hud.setTimer(timeLeft, LEVEL.time);
 		}
 	}
 });
 
 // ── boot ─────────────────────────────────────────────────────────
 
-// Deep links for testing: ?screen=story|difficulty|settings|intro|casefile, ?play=1
+// Deep links for testing: ?screen=story|settings|intro|casefile, ?play=1
 const params = new URLSearchParams(location.search);
-if (params.get('level') && LEVELS[params.get('level')]) settings.level = params.get('level');
 if (params.get('play')) {
 	fillIntro();
 	startGame();
