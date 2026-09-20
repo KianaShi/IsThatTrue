@@ -17,6 +17,8 @@ import { createMenu, loadSettings } from './ui/menu.js';
 import { createAudio } from './core/audio.js';
 
 const settings = loadSettings();
+// Only The Leak has a complete question set and solution.
+if (settings.story !== 's1') settings.story = 's1';
 const audio = createAudio();
 audio.enabled = settings.sound === 'on';
 audio.musicEnabled = settings.music === 'on';
@@ -453,7 +455,7 @@ document.querySelector('[data-slot="suspectboard"]').addEventListener('click', e
 	if (un) { const [key, sq] = un.dataset.unassign.split(':'); unassign(key, Number(sq)); }
 });
 
-const story = () => STORIES[settings.story] || STORIES.s1;
+const story = () => STORIES.s1;
 const timerOn = () => settings.timer === 'on';
 
 // ── menu ─────────────────────────────────────────────────────────
@@ -483,11 +485,15 @@ const menu = createMenu({
 });
 
 function paintDynamic() {
-	document.querySelectorAll('[data-act="story"]').forEach(el =>
-		el.classList.toggle('picked', el.dataset.id === settings.story));
+	document.querySelectorAll('[data-act="story"]').forEach(el => {
+		el.disabled = el.dataset.id !== 's1';
+		el.classList.toggle('picked', !el.disabled && el.dataset.id === settings.story);
+		if (el.disabled) el.querySelector('.ctease').textContent = 'Coming soon — this case is not yet available.';
+	});
 }
 
 function pickStory(id) {
+	if (id !== 's1') return;
 	settings.story = id;
 	menu.save();
 	menu.paint();
