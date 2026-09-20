@@ -1,4 +1,4 @@
-// Case files and difficulty contracts. Pure data — the menu, the briefing
+// Case files and the single play contract. Pure data — the menu, the briefing
 // screen and the result screen all read from here.
 
 export const STORIES = {
@@ -23,10 +23,10 @@ export const STORIES = {
 				{ name: 'Noah Reed', role: 'Temporary Contractor', img: './assets/noah-reed.jpg', note: 'Two weeks into the job. The easiest person in the building to frame.' }
 			],
 			mission: [
-				'Who leaked the original video?',
-				'And if new evidence changes the story — what is true, what is misleading, and who can you trust?'
+				'Work out who leaked the original video, and who altered the second one.',
+				'Some evidence looks damning but does not mean what it seems. Decide what to trust, place it under the right suspect, and star the pieces that matter most.'
 			],
-			mechanics: 'You have 5 minutes. Every piece of information costs time and attention. Choose carefully what you Dig In, Hold, or Discard.'
+			mechanics: 'You have 5 minutes. Every piece of information costs time and attention. Choose carefully what you Dig In, Add to Basket, or Discard.'
 		},
 		clues: [
 			'The export log — 4.2 GB pulled to an external drive at 21:47.',
@@ -358,12 +358,8 @@ export const STORIES = {
 	}
 };
 
-export const LEVELS = {
-	easy:   { label: 'Easy',   clues: 3, time: 300, note: 'A stroll through the snow' },
-	medium: { label: 'Medium', clues: 4, time: 240, note: 'The trail is warm' },
-	hard:   { label: 'Hard',   clues: 5, time: 180, note: 'The snow keeps its secrets' },
-	hell:   { label: 'Hell',   clues: 6, time: 120, note: 'No mercy. No mistakes.', subtle: true }
-};
+// The one contract every run plays under: the clock, in seconds.
+export const LEVEL = { time: 300 };
 
 // Decoy tiles used to pad a deck when a story ships only raw clue strings.
 // They waste the detective's time — that is their whole job.
