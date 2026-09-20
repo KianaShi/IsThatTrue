@@ -141,7 +141,7 @@ export const STORIES = {
 					"Avery Chen's warning specifically mentions badge sharing and unattended authenticated workstations.",
 					"The scenario it describes matches how a badge and a logged-in workstation were used in Lab 3 that night."
 				] },
-			{ id: "D2", kind: 'clue', label: "Lab Temperature Log", real: false,
+			{ id: "D2", kind: 'clue', label: "Lab Temperature Log", real: true,
 				relevance: "low", redHerring: true,
 				aboutSuspect: null, connectsTo: [],
 				text: "The building's environmental system logged a change in one of the labs around midnight.",
@@ -281,8 +281,8 @@ export const STORIES = {
 					"They were sent from different networks: the first from Lab 3's network, the second from a device elsewhere in the building.",
 					"No login, device or network detail is shared between the two uploads."
 				] },
-			{ id: "D8", kind: 'clue', label: "Older Security Report", real: false,
-				relevance: "low", redHerring: false,
+			{ id: "D8", kind: 'clue', label: "Older Security Report", real: true,
+				relevance: "low", redHerring: true,
 				aboutSuspect: "avery", connectsTo: [],
 				text: "An older security incident report appeared in the same system logs pulled for this review.",
 				digLevels: [
@@ -310,11 +310,11 @@ export const STORIES = {
 			{ id: "G8", kind: 'clue', label: "Third-Floor Activity", real: true,
 				relevance: "high", redHerring: false,
 				aboutSuspect: "avery", connectsTo: ["F1", "C2"],
-				text: "Badge and login records place a staff member on a different floor throughout the incident window.",
+				text: "Badge and login records show credential activity on a different floor throughout the incident window.",
 				digLevels: [
-					"Badge logs show a security engineer at her own desk on the third floor from 10 PM until after midnight.",
+					"Badge logs show a security engineer's badge used at third-floor readers from 10 PM until after midnight.",
 					"Avery Chen's login sessions in that period match routine end-of-day security patch work.",
-					"None of her recorded activity overlaps with the Lab 3 entry at 11:31 PM or the folder access at 11:39 PM."
+					"None of her recorded badge or login activity overlaps with the Lab 3 entry at 11:31 PM or the folder access at 11:39 PM."
 				] },
 			{ id: "H8", kind: 'clue', label: "Visitor Badge", real: true,
 				relevance: "low", redHerring: true,
