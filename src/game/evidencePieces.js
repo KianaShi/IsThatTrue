@@ -10,11 +10,12 @@ import { squareToWorld } from './board.js';
 // reads at a glance. Colour alternates with every player interaction, like
 // turns in a game: the first Dig In on the board comes out black, the next
 // white, and so on, whichever piece it lands on.
+// `stretch` lengthens a piece vertically only, without making it wider.
 const TIERS = [
 	{ type: PAWN, scale: 1 },
 	{ type: KNIGHT, scale: 1.25 },
 	{ type: BISHOP, scale: 1.4 },
-	{ type: KING, scale: 1.45 }
+	{ type: KING, scale: 1.45, stretch: 1.2 }
 ];
 export const MAX_TIER = TIERS.length - 1;
 
@@ -44,7 +45,7 @@ export function createEvidencePieces(scene) {
 		if (!mesh) return;
 		const t = TIERS[Math.min(Math.max(tier, 0), MAX_TIER)];
 		mesh.geometry = geometries[t.type];
-		mesh.scale.setScalar(t.scale);
+		mesh.scale.set(t.scale, t.scale * (t.stretch || 1), t.scale);
 		mesh.material.dispose();
 		mesh.material = pieceMaterial(nextSide);
 		nextSide = nextSide === 'obsidian' ? 'ivory' : 'obsidian';
