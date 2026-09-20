@@ -489,7 +489,7 @@ function fillCasefile(s) {
 	document.querySelector('[data-slot="cf-mission"]').innerHTML =
 		b.mission.map(m => `<p class="mission-line">${m}</p>`).join('');
 	document.querySelector('[data-slot="cf-mechanics"]').innerHTML =
-		b.mechanics.replace(/(Dig In|Hold|Discard|5 minutes)/g, '<b>$1</b>');
+		b.mechanics.replace(/(Dig In|Add to Basket|Discard|5 minutes)/g, '<b>$1</b>');
 }
 
 // ── launch countdown ───────────────────────────────────────────

@@ -23,10 +23,10 @@ export const STORIES = {
 				{ name: 'Noah Reed', role: 'Temporary Contractor', img: './assets/noah-reed.jpg', note: 'Two weeks into the job. The easiest person in the building to frame.' }
 			],
 			mission: [
-				'Who leaked the original video?',
-				'And if new evidence changes the story — what is true, what is misleading, and who can you trust?'
+				'Work out who leaked the original video, and who altered the second one.',
+				'Some evidence looks damning but does not mean what it seems. Decide what to trust, place it under the right suspect, and star the pieces that matter most.'
 			],
-			mechanics: 'You have 5 minutes. Every piece of information costs time and attention. Choose carefully what you Dig In, Hold, or Discard.'
+			mechanics: 'You have 5 minutes. Every piece of information costs time and attention. Choose carefully what you Dig In, Add to Basket, or Discard.'
 		},
 		clues: [
 			'The export log — 4.2 GB pulled to an external drive at 21:47.',
