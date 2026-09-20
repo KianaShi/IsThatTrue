@@ -12,7 +12,7 @@ import { squareToWorld } from './board.js';
 // white, and so on, whichever piece it lands on.
 // `stretch` lengthens a piece vertically only, without making it wider.
 const TIERS = [
-	{ type: PAWN, scale: 1 },
+	{ type: PAWN, scale: 1, stretch: 1.2 },
 	{ type: KNIGHT, scale: 1.25 },
 	{ type: BISHOP, scale: 1.4 },
 	{ type: KING, scale: 1.45, stretch: 1.2 }
@@ -29,6 +29,7 @@ export function createEvidencePieces(scene) {
 
 	function spawn(sq) {
 		const mesh = new THREE.Mesh(geometries[PAWN], pieceMaterial('ivory'));
+		mesh.scale.set(TIERS[0].scale, TIERS[0].scale * TIERS[0].stretch, TIERS[0].scale);
 		mesh.castShadow = true;
 		mesh.receiveShadow = true;
 		squareToWorld(sq, mesh.position);
