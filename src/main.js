@@ -101,10 +101,16 @@ const hud = createHud({ onTool: tool => {
 
 // ── evidence actions ────────────────────────────────────────────
 
-// Each Dig In reveals the next level of detail and moves the piece up a tier
-// (pawn, knight, bishop, king). `dugLevel` is how many levels are open.
+// Glyph for each tier, indexed by a tile's `dugLevel`.
 const TIER_GLYPH = ['♟︎', '♞', '♝', '♚'];
 
+/**
+ * Spend one Dig In on the piece whose card is open: reveal its next level of
+ * detail and promote the piece one tier (pawn, knight, bishop, king).
+ * `tile.dugLevel` counts how many levels are open; the button locks once every
+ * level (up to MAX_TIER) has been dug. Does nothing if no card is open.
+ * @returns {void}
+ */
 function doDig() {
 	const tile = tiles.get(currentSq);
 	if (!tile) return;
@@ -225,10 +231,23 @@ document.querySelector('[data-slot="accusescreen"]').addEventListener('click', e
 let sbIndex = 0;
 let sbBasketOpen = false;
 
+/**
+ * CSS class for a tile's piece colour.
+ * @param {{side?: string}} t - A tile; `side` is 'obsidian' for black pieces.
+ * @returns {'pc-black'|'pc-white'}
+ */
 const pcClass = t => (t.side === 'obsidian' ? 'pc-black' : 'pc-white');
 
-// One tile in the suspect board: the piece as it currently stands, over the
-// evidence's name. Used for filled slots and for the basket drawer alike.
+/**
+ * Markup for one tile in the suspect board: the piece as it currently stands
+ * (tier glyph, black or white) over the evidence's name. Used for filled slots
+ * and for the basket drawer alike.
+ * @param {number} sq - 0x88 board square of the evidence.
+ * @param {object} t - The deck tile.
+ * @param {string} attr - Attributes for the button (e.g. a data-place or data-unassign hook).
+ * @param {string} [badge] - Extra markup appended inside the button.
+ * @returns {string} HTML for the tile.
+ */
 function pieceTile(sq, t, attr, badge = '') {
 	return `<button type="button" class="sb-slot filled" ${attr}>
 		<span class="pc ${pcClass(t)}">${TIER_GLYPH[t.dugLevel]}</span>
@@ -236,6 +255,11 @@ function pieceTile(sq, t, attr, badge = '') {
 	</button>`;
 }
 
+/**
+ * Redraw the always-visible basket strip: every held-but-unplaced piece gets a
+ * chip showing its current tier glyph, board square and name.
+ * @returns {void}
+ */
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
@@ -244,9 +268,13 @@ function renderBasketBar() {
 		: '<span class="basketbar-empty">Add evidence to fill it.</span>';
 }
 
-// The suspect board shows one suspect at a time. Held-but-unplaced evidence
-// lives in the basket drawer; tapping a piece there places it under whoever is
-// on screen, and tapping a placed piece sends it back to the basket.
+/**
+ * Redraw the basket strip and the suspect board. The board shows one suspect
+ * at a time; held-but-unplaced evidence lives in the basket drawer, where
+ * tapping a piece places it under whoever is on screen, and tapping a placed
+ * piece sends it back to the basket.
+ * @returns {void}
+ */
 function renderCaseboard() {
 	renderBasketBar();
 	const s = SUSPECTS[sbIndex];
@@ -435,8 +463,14 @@ document.getElementById('gear').addEventListener('click', () => {
 
 // ── flow ─────────────────────────────────────────────────────────
 
-// Deal the story's deck onto fixed squares, in deck order, and spawn one
-// evidence piece per square.
+/**
+ * Deal a story's deck onto the board and spawn one evidence pawn per tile.
+ * A tile's id is its square ("B7" = file B, rank 7); a missing, malformed or
+ * already-taken id falls back to the opening-position layout by index. Also
+ * clears every per-game piece of state (assignments, answers, dig levels).
+ * @param {Array<object>} deck - Tiles from `buildDeck`; only the first 32 are placed.
+ * @returns {void}
+ */
 function dealTiles(deck) {
 	tiles.clear();
 	board.clearMarks();
@@ -564,8 +598,14 @@ function pickSquare(event) {
 
 const squareName = sq => 'ABCDEFGH'[sq & 15] + ((sq >> 4) + 1);
 
-// Turn a piece over: just open its card. Dig / Hold / Discard (wired
-// through the hud's onTool) decide what happens to it from there.
+/**
+ * Open a piece's card. Replays every level already dug out of it and locks the
+ * Dig button if none remain; Dig / Hold / Discard (routed through the hud's
+ * onTool) decide what happens next.
+ * @param {number} sq - 0x88 board square of the piece.
+ * @param {object} tile - The deck tile dealt onto that square.
+ * @returns {void}
+ */
 function revealTile(sq, tile) {
 	currentSq = sq;
 	hud.showTile(tile, squareName(sq));

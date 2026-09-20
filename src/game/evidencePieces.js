@@ -19,6 +19,12 @@ const TIERS = [
 ];
 export const MAX_TIER = TIERS.length - 1;
 
+/**
+ * Build the piece layer for the evidence board.
+ * @param {import('three').Scene} scene - Scene the piece group is added to.
+ * @returns {{spawn: function, upgrade: function, hide: function, reset: function, meshes: Array}}
+ *   Handles to spawn, upgrade, hide and reset pieces by 0x88 square.
+ */
 export function createEvidencePieces(scene) {
 	const group = new THREE.Group();
 	scene.add(group);
@@ -27,6 +33,11 @@ export function createEvidencePieces(scene) {
 	const bySquare = new Map();
 	let nextSide = 'obsidian';
 
+	/**
+	 * Put a starting pawn on a square (stretched slightly taller than the mesh).
+	 * @param {number} sq - 0x88 board square.
+	 * @returns {import('three').Mesh} The new piece's mesh.
+	 */
 	function spawn(sq) {
 		const mesh = new THREE.Mesh(geometries[PAWN], pieceMaterial('ivory'));
 		mesh.scale.set(TIERS[0].scale, TIERS[0].scale * TIERS[0].stretch, TIERS[0].scale);
@@ -39,8 +50,13 @@ export function createEvidencePieces(scene) {
 		return mesh;
 	}
 
-	// Move a piece up to the given tier: new shape, larger, and whichever colour
-	// the board's turn is on — which then flips for the next interaction.
+	/**
+	 * Move a piece up to the given tier: new shape and scale, and whichever
+	 * colour the board's turn is on, which then flips for the next interaction.
+	 * @param {number} sq - 0x88 board square of the piece.
+	 * @param {number} tier - 0 (pawn) to MAX_TIER (king); out-of-range values clamp.
+	 * @returns {'ivory'|'obsidian'} The side the piece came out as ('ivory' if there is no piece).
+	 */
 	function upgrade(sq, tier) {
 		const mesh = bySquare.get(sq);
 		if (!mesh) return 'ivory';
@@ -54,6 +70,11 @@ export function createEvidencePieces(scene) {
 		return side;
 	}
 
+	/**
+	 * Remove the piece on a square and free its material.
+	 * @param {number} sq - 0x88 board square; a no-op if empty.
+	 * @returns {void}
+	 */
 	function hide(sq) {
 		const mesh = bySquare.get(sq);
 		if (!mesh) return;
@@ -62,6 +83,10 @@ export function createEvidencePieces(scene) {
 		bySquare.delete(sq);
 	}
 
+	/**
+	 * Remove every piece and restart the colour turn on black.
+	 * @returns {void}
+	 */
 	function reset() {
 		for (const mesh of bySquare.values()) { group.remove(mesh); mesh.material.dispose(); }
 		bySquare.clear();

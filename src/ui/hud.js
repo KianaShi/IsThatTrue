@@ -89,7 +89,12 @@ export function createHud({ onTool }) {
 			$('tile').hidden = false;
 		},
 
-		// Append the Dig In payoff beneath the base description.
+		/**
+		 * Append one level of Dig In detail beneath the card's base text, after
+		 * any levels already shown, so they read in the order they were dug.
+		 * @param {string} text - The detail to reveal.
+		 * @returns {void}
+		 */
 		revealDig(text) {
 			const p = document.createElement('p');
 			p.className = 'tile-text tile-dig-reveal';
@@ -98,6 +103,11 @@ export function createHud({ onTool }) {
 			(shown.length ? shown[shown.length - 1] : $('tile-text')).after(p);
 		},
 
+		/**
+		 * Enable or lock the card's Dig In button.
+		 * @param {boolean} on - True while the piece still has levels left to dig.
+		 * @returns {void}
+		 */
 		setDigEnabled(on) {
 			const btn = document.querySelector('[data-tool="dig"]');
 			if (btn) btn.disabled = !on;
