@@ -41,6 +41,7 @@ export function createAudio() {
 		master.gain.setValueAtTime(0.0001, c.currentTime);
 		master.gain.exponentialRampToValueAtTime(0.15, c.currentTime + 3.5);
 		master.connect(c.destination);
+		const sources = []; // every long-running source, so stopMusic() can end them
 
 		// Drone: root, a detuned twin for slow beating, and a hollow fifth.
 		const filter = c.createBiquadFilter();
@@ -56,6 +57,7 @@ export function createAudio() {
 			og.gain.value = g;
 			o.connect(og).connect(filter);
 			o.start();
+			sources.push(o);
 		});
 		filter.connect(droneGain).connect(master);
 		const swell = c.createOscillator();
@@ -64,6 +66,7 @@ export function createAudio() {
 		swellGain.gain.value = 0.16;
 		swell.connect(swellGain).connect(droneGain.gain);
 		swell.start();
+		sources.push(swell);
 
 		// Wind.
 		const frames = c.sampleRate * 4;
@@ -87,6 +90,7 @@ export function createAudio() {
 		gust.start();
 		src.connect(bp).connect(windGain).connect(master);
 		src.start();
+		sources.push(gust, src);
 
 		// A distant bell every few seconds, sometimes.
 		const bellTimer = setInterval(() => {
@@ -106,7 +110,7 @@ export function createAudio() {
 			});
 		}, 9000);
 
-		return { master, bellTimer };
+		return { master, bellTimer, sources };
 	}
 
 	function startMusic() {
@@ -119,12 +123,16 @@ export function createAudio() {
 		const m = music;
 		music = null;
 		clearInterval(m.bellTimer);
+		const release = () => {
+			m.sources.forEach((s) => { try { s.stop(); } catch { /* already stopped */ } });
+			try { m.master.disconnect(); } catch { /* already gone */ }
+		};
 		try {
 			const t = ac().currentTime;
 			m.master.gain.cancelScheduledValues(t);
 			m.master.gain.setTargetAtTime(0.0001, t, 0.4);
-			setTimeout(() => m.master.disconnect(), 1800);
-		} catch { /* already gone */ }
+			setTimeout(release, 1800);
+		} catch { release(); }
 	}
 
 	// The recorded loop takes over during an investigation. A generation token
