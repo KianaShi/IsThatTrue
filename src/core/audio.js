@@ -1,4 +1,4 @@
-// Every sound is synthesised on the spot — no assets, no loading.
+// Synthesised effects and ambience, plus Leo's recorded investigation loop.
 // Two independent channels: SFX (the `enabled` flag) and an ambient score
 // (the `musicEnabled` flag) so the settings toggles stay honest.
 export function createAudio() {
@@ -41,6 +41,7 @@ export function createAudio() {
 		master.gain.setValueAtTime(0.0001, c.currentTime);
 		master.gain.exponentialRampToValueAtTime(0.15, c.currentTime + 3.5);
 		master.connect(c.destination);
+		const sources = []; // every long-running source, so stopMusic() can end them
 
 		// Drone: root, a detuned twin for slow beating, and a hollow fifth.
 		const filter = c.createBiquadFilter();
@@ -56,6 +57,7 @@ export function createAudio() {
 			og.gain.value = g;
 			o.connect(og).connect(filter);
 			o.start();
+			sources.push(o);
 		});
 		filter.connect(droneGain).connect(master);
 		const swell = c.createOscillator();
@@ -64,6 +66,7 @@ export function createAudio() {
 		swellGain.gain.value = 0.16;
 		swell.connect(swellGain).connect(droneGain.gain);
 		swell.start();
+		sources.push(swell);
 
 		// Wind.
 		const frames = c.sampleRate * 4;
@@ -87,6 +90,7 @@ export function createAudio() {
 		gust.start();
 		src.connect(bp).connect(windGain).connect(master);
 		src.start();
+		sources.push(gust, src);
 
 		// A distant bell every few seconds, sometimes.
 		const bellTimer = setInterval(() => {
@@ -106,7 +110,7 @@ export function createAudio() {
 			});
 		}, 9000);
 
-		return { master, bellTimer };
+		return { master, bellTimer, sources };
 	}
 
 	function startMusic() {
@@ -119,21 +123,99 @@ export function createAudio() {
 		const m = music;
 		music = null;
 		clearInterval(m.bellTimer);
+		const release = () => {
+			m.sources.forEach((s) => { try { s.stop(); } catch { /* already stopped */ } });
+			try { m.master.disconnect(); } catch { /* already gone */ }
+		};
 		try {
 			const t = ac().currentTime;
 			m.master.gain.cancelScheduledValues(t);
 			m.master.gain.setTargetAtTime(0.0001, t, 0.4);
-			setTimeout(() => m.master.disconnect(), 1800);
-		} catch { /* already gone */ }
+			setTimeout(release, 1800);
+		} catch { release(); }
+	}
+
+	// The recorded loop takes over during an investigation. A generation token
+	// prevents an old play promise or fade from affecting a newer session.
+	const TRACK_SRC = new URL('../../odyssey_60s_loop.wav', import.meta.url).href;
+	const TRACK_VOLUME = 0.55;
+	let track = null;
+	let trackWanted = false;
+	let trackStarting = false;
+	let trackGeneration = 0;
+	let fadeTimer = 0;
+
+	function cancelTrackTransition() {
+		clearInterval(fadeTimer);
+		trackStarting = false;
+		return ++trackGeneration;
+	}
+
+	function fadeTrack(target, ms, generation, done = () => {}) {
+		clearInterval(fadeTimer);
+		const from = track.volume;
+		const started = performance.now();
+		fadeTimer = setInterval(() => {
+			if (generation !== trackGeneration) return;
+			const k = Math.min(1, (performance.now() - started) / ms);
+			track.volume = Math.max(0, Math.min(1, from + (target - from) * k));
+			if (k === 1) { clearInterval(fadeTimer); done(); }
+		}, 40);
+	}
+
+	function playTrack() {
+		if (!musicOn || !trackWanted || trackStarting) return;
+		const generation = cancelTrackTransition();
+		stopMusic();
+		if (!track) { track = new Audio(TRACK_SRC); track.loop = true; }
+		track.currentTime = 0;
+		track.volume = 0;
+		trackStarting = true;
+		track.play().then(() => {
+			if (generation !== trackGeneration) return;
+			trackStarting = false;
+			fadeTrack(TRACK_VOLUME, 1200, generation);
+		}).catch(() => {
+			if (generation !== trackGeneration) return;
+			trackStarting = false;
+			startMusic(); // Keep ambience if the file cannot play.
+		});
+	}
+
+	function haltTrack(immediate = false) {
+		const generation = cancelTrackTransition();
+		if (!track) return;
+		if (immediate) { track.pause(); track.volume = 0; return; }
+		fadeTrack(0, 900, generation, () => track.pause());
 	}
 
 	return {
 		set enabled(v) { on = v; },
 		get enabled() { return on; },
-		set musicEnabled(v) { musicOn = v; if (v) startMusic(); else stopMusic(); },
+		set musicEnabled(v) {
+			if (musicOn === v) return;
+			musicOn = v;
+			if (!v) { stopMusic(); haltTrack(true); return; }
+			if (trackWanted) playTrack(); else startMusic();
+		},
 		get musicEnabled() { return musicOn; },
 		// Audio contexts need a user gesture; call once on the first tap.
-		unlock() { if (musicOn) startMusic(); },
+		unlock() {
+			if (!musicOn) return;
+			if (trackWanted) { if (!track || track.paused) playTrack(); }
+			else startMusic();
+		},
+		startTrack() {
+			if (trackWanted && (trackStarting || (track && !track.paused))) return;
+			trackWanted = true;
+			playTrack();
+		},
+		stopTrack() {
+			if (!trackWanted) return;
+			trackWanted = false;
+			haltTrack();
+			if (musicOn) startMusic();
+		},
 
 		tick() { tone(2100, { dur: 0.05, gain: 0.03 }); },
 		confirm() { tone(680, { dur: 0.07, gain: 0.045 }); tone(1020, { dur: 0.09, gain: 0.04, delay: 0.06 }); },

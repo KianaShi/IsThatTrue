@@ -478,7 +478,7 @@ const menu = createMenu({
 		else if (act === 'story') pickStory(el.dataset.id);
 		else if (act === 'settings') menu.show('settings', { push: true });
 		else if (act === 'continue') openIntro();
-		else if (act === 'begin') { clearInterval(countdownTimer); beginTravel(); }
+		else if (act === 'begin') { clearInterval(countdownTimer); audio.startTrack(); beginTravel(); }
 		else if (act === 'quit') toTitle();
 		else if (act === 'close') menu.show('title');
 	}
@@ -678,6 +678,7 @@ function startGame() {
 	dealTiles(deck);
 	renderStars();
 	playing = true;
+	audio.startTrack();
 	menu.hide();
 	hud.show();
 	hud.setCase(s.name);
@@ -689,6 +690,7 @@ function startGame() {
 
 function toTitle() {
 	playing = false;
+	audio.stopTrack();
 	clearTimeout(travelTimer);
 	document.getElementById('travel').hidden = true;
 	tiles.clear();
@@ -713,6 +715,7 @@ function toTitle() {
 function endCase(solved, reason = 'submitted') {
 	if (!playing) return;
 	playing = false;
+	audio.stopTrack();
 	if (solved) audio.solve(); else audio.fail();
 	const titleEl = document.querySelector('[data-slot="result-title"]');
 	titleEl.textContent = solved ? 'CASE SOLVED' : reason === 'timeout' ? 'TIME’S UP' : 'CASE REVIEW';
