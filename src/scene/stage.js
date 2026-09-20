@@ -18,6 +18,14 @@ const VIEWS = {
 // lens up to keep the whole clearing in frame.
 const fovFor = () => (innerWidth / Math.max(1, innerHeight)) < 0.75 ? 65 : 42;
 
+/**
+ * Create the renderer, camera, orbit controls and frame loop for the scene.
+ * The play view is framed by the 'seat' preset and zoom is locked so
+ * scroll/pinch can't drift it; rotating still works.
+ * @param {HTMLCanvasElement} canvas - Canvas to render into.
+ * @param {'ultra'|'high'|'low'} [quality='high'] - Starting quality tier.
+ * @returns {object} The stage: scene, camera, renderer, state and frame hooks.
+ */
 export function createStage(canvas, quality = 'high') {
 	const cfg = QUALITY[quality] || QUALITY.high;
 

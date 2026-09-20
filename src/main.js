@@ -101,10 +101,16 @@ const hud = createHud({ onTool: tool => {
 
 // ── evidence actions ────────────────────────────────────────────
 
-// Each Dig In reveals the next level of detail and moves the piece up a tier
-// (pawn, knight, bishop, king). `dugLevel` is how many levels are open.
+// Glyph for each tier, indexed by a tile's `dugLevel`.
 const TIER_GLYPH = ['♟', '♞', '♝', '♚'];
 
+/**
+ * Spend one Dig In on the piece whose card is open: reveal its next level of
+ * detail and promote the piece one tier (pawn, knight, bishop, king).
+ * `tile.dugLevel` counts how many levels are open; the button locks once every
+ * level (up to MAX_TIER) has been dug. Does nothing if no card is open.
+ * @returns {void}
+ */
 function doDig() {
 	const tile = tiles.get(currentSq);
 	if (!tile) return;
@@ -219,8 +225,11 @@ document.querySelector('[data-slot="accusescreen"]').addEventListener('click', e
 	renderAccuseScreen();
 });
 
-// The always-visible strip: every held-but-unplaced piece gets a chip here
-// the instant it's added, dropping in like it just landed in the basket.
+/**
+ * Redraw the always-visible basket strip: every held-but-unplaced piece gets a
+ * chip showing its current tier glyph, board square and name.
+ * @returns {void}
+ */
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
@@ -406,8 +415,14 @@ document.getElementById('gear').addEventListener('click', () => {
 
 // ── flow ─────────────────────────────────────────────────────────
 
-// Deal the story's deck onto fixed squares, in deck order, and spawn one
-// evidence piece per square.
+/**
+ * Deal a story's deck onto the board and spawn one evidence pawn per tile.
+ * A tile's id is its square ("B7" = file B, rank 7); a missing, malformed or
+ * already-taken id falls back to the opening-position layout by index. Also
+ * clears every per-game piece of state (assignments, answers, dig levels).
+ * @param {Array<object>} deck - Tiles from `buildDeck`; only the first 32 are placed.
+ * @returns {void}
+ */
 function dealTiles(deck) {
 	tiles.clear();
 	board.clearMarks();
@@ -534,8 +549,14 @@ function pickSquare(event) {
 
 const squareName = sq => 'ABCDEFGH'[sq & 15] + ((sq >> 4) + 1);
 
-// Turn a piece over: just open its card. Dig / Hold / Discard (wired
-// through the hud's onTool) decide what happens to it from there.
+/**
+ * Open a piece's card. Replays every level already dug out of it and locks the
+ * Dig button if none remain; Dig / Hold / Discard (routed through the hud's
+ * onTool) decide what happens next.
+ * @param {number} sq - 0x88 board square of the piece.
+ * @param {object} tile - The deck tile dealt onto that square.
+ * @returns {void}
+ */
 function revealTile(sq, tile) {
 	currentSq = sq;
 	hud.showTile(tile, squareName(sq));
