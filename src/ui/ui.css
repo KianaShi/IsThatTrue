@@ -1077,3 +1077,15 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 [data-menu="title"] .mi:hover { background: rgba(212, 0, 39, .30); border-color: var(--acc-bright); }
 [data-menu="title"] .mi:hover i { width: 20px; }
 [data-menu="title"] .mi:hover .arr { color: var(--acc-bright); }
+
+/* Story, briefing and launch screens: nothing is lit until the pointer is over it, so the
+   keyboard selection (.sel) and the saved story (.picked) are not shown here. */
+[data-menu="story"] .mi.card { background: rgba(4, 8, 16, .42); border-color: var(--ghost); color: var(--dim); }
+[data-menu="story"] .mi.card:hover { background: rgba(212, 0, 39, .18); border-color: var(--acc-bright); }
+[data-menu="story"] .mi.card .picked-tag { display: none; }
+[data-menu="casefile"] .mi.primary, [data-menu="intro"] .mi.primary { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .75); color: #fff; }
+[data-menu="casefile"] .mi.primary:hover, [data-menu="intro"] .mi.primary:hover { background: rgba(212, 0, 39, .30); border-color: var(--acc-bright); }
+[data-menu="story"] .mi i, [data-menu="casefile"] .mi i, [data-menu="intro"] .mi i { width: 0; }
+[data-menu="casefile"] .mi:hover i, [data-menu="intro"] .mi:hover i { width: 20px; }
+[data-menu="casefile"] .mi .arr, [data-menu="intro"] .mi .arr { color: #fff; }
+[data-menu="casefile"] .mi:hover .arr, [data-menu="intro"] .mi:hover .arr { color: var(--acc-bright); }
