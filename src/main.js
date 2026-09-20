@@ -242,6 +242,12 @@ function unassign(key, sq) {
 	renderCaseboard();
 }
 
+/**
+ * Submit the accusation. With any question unanswered it only shows a reminder
+ * and the case carries on; once every question has an answer, the case ends and
+ * the result screen shows the evaluation.
+ * @returns {void}
+ */
 function doSubmit() {
 	const resultEl = document.querySelector('[data-slot="cb-result"]');
 	if (QUESTIONS.some(q => !accuseAnswers[q.key])) {
@@ -437,6 +443,13 @@ const menu = createMenu({
 	audio,
 	onSetting: applySetting,
 	onPaint: paintDynamic,
+	/**
+	 * Route a menu button to its action. The result screen has no way back into
+	 * the case, only `quit` to the title.
+	 * @param {string} act - The button's `data-act` value.
+	 * @param {HTMLElement} el - The button that was activated.
+	 * @returns {void}
+	 */
 	onAction: (act, el) => {
 		if (act === 'stories') menu.show('story', { push: true });
 		else if (act === 'start') menu.show('difficulty', { push: true });
@@ -618,6 +631,12 @@ function beginTravel() {
 	}, 5000);
 }
 
+/**
+ * Begin play: deal the chosen story's deck, reset the counters, stars and clock,
+ * and hand control to the player. Also keeps the full deck for the end-of-case
+ * evaluation, since discarded tiles leave the board.
+ * @returns {void}
+ */
 function startGame() {
 	const s = story();
 	const l = level();
@@ -792,6 +811,14 @@ addEventListener('keydown', event => {
 
 let timerPaint = 0;
 
+/**
+ * Per-frame update: animates the scene and, while a case is being played,
+ * advances the clock, ends the case with a timeout when the countdown reaches
+ * zero, and repaints the timer.
+ * @param {number} dt - Seconds since the last frame.
+ * @param {number} time - Total elapsed seconds.
+ * @returns {void}
+ */
 stage.onUpdate((dt, time) => {
 	lighting.update(dt, time);
 	sky.update(dt, time);
