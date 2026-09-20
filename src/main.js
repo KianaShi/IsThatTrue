@@ -323,11 +323,13 @@ let sbBasketOpen = false;
  * @returns {string} HTML for the tile.
  */
 function pieceTile(sq, t, attr, badge = '') {
-	return `<button type="button" class="sb-slot filled" ${attr}>
-		<span class="sb-slot-star${t.starred ? ' on' : ''}" role="button" data-star-toggle="${sq}" aria-pressed="${!!t.starred}" aria-label="${t.starred ? 'Remove the star' : 'Star this evidence'}">${t.starred ? '★' : '☆'}</span>
-		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
-		<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
-	</button>`;
+	return `<div class="sb-cell">
+		<button type="button" class="sb-slot filled" ${attr}>
+			<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
+			<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
+		</button>
+		<button type="button" class="sb-slot-star${t.starred ? ' on' : ''}" data-star-toggle="${sq}" aria-pressed="${!!t.starred}" aria-label="${t.starred ? 'Remove the star' : 'Star this evidence'}">${t.starred ? '★' : '☆'}</button>
+	</div>`;
 }
 
 /**
@@ -597,6 +599,7 @@ function dealTiles(deck) {
 		tile.side = 'ivory';
 		tile.held = false;
 		tile.placedTo = null;
+		tile.starred = false;
 		tiles.set(sq, tile);
 		evidencePieces.spawn(sq);
 	});

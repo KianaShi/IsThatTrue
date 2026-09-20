@@ -1060,10 +1060,14 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .hud-star-item:hover .hud-star-name { text-decoration: underline; }
 
 /* Every tile on the suspect board carries a star toggle in its top-left corner: yellow when starred. */
+.sb-cell { position: relative; min-width: 0; }
+.sb-cell > .sb-slot { width: 100%; }
 .sb-slot-star {
-	position: absolute; top: 0; left: 0; z-index: 2; width: 26px; height: 26px;
+	position: absolute; top: 0; left: 0; z-index: 2; width: 26px; height: 26px; padding: 0;
 	display: grid; place-items: center; font-size: 15px; line-height: 1;
+	background: none; border: none; font-family: inherit;
 	color: rgba(255, 255, 255, .55); cursor: pointer;
 }
+.sb-slot-star:focus-visible { outline: 2px solid var(--snow); outline-offset: -2px; border-radius: 6px; }
 .sb-slot-star:hover { color: var(--snow); }
 .sb-slot-star.on { color: #f5c518; }
