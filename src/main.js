@@ -102,8 +102,8 @@ const hud = createHud({ onTool: tool => {
 // ── evidence actions ────────────────────────────────────────────
 
 // Each Dig In reveals the next level of detail and moves the piece up a tier
-// (pawn, knight, bishop, rook). `dugLevel` is how many levels are open.
-const TIER_GLYPH = ['♟', '♞', '♝', '♜'];
+// (pawn, knight, bishop, king). `dugLevel` is how many levels are open.
+const TIER_GLYPH = ['♟', '♞', '♝', '♚'];
 
 function doDig() {
 	const tile = tiles.get(currentSq);

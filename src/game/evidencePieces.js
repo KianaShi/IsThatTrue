@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { PAWN, KNIGHT, BISHOP, ROOK } from '../chess/engine.js';
+import { PAWN, KNIGHT, BISHOP, KING } from '../chess/engine.js';
 import { pieceGeometries } from './pieces.js';
 import { pieceMaterial } from './materials.js';
 import { squareToWorld } from './board.js';
 
 // Piece layer for the evidence board: one ivory pawn per dealt square.
-// Each Dig In is a real upgrade — pawn, then knight, bishop, rook — and each
+// Each Dig In is a real upgrade — pawn, then knight, bishop, king — and each
 // step stands a little bigger than the last, so how far a piece has been dug
 // reads at a glance. Colour alternates with every player interaction, like
 // turns in a game: the first Dig In on the board comes out black, the next
@@ -14,7 +14,7 @@ const TIERS = [
 	{ type: PAWN, scale: 1 },
 	{ type: KNIGHT, scale: 1.25 },
 	{ type: BISHOP, scale: 1.4 },
-	{ type: ROOK, scale: 1.55 }
+	{ type: KING, scale: 1.45 }
 ];
 export const MAX_TIER = TIERS.length - 1;
 
