@@ -15,7 +15,7 @@ const TIERS = [
 	{ type: PAWN, scale: 1, stretch: 1.2 },
 	{ type: KNIGHT, scale: 1.25 },
 	{ type: BISHOP, scale: 1.4 },
-	{ type: KING, scale: 1.45, stretch: 1.2 }
+	{ type: KING, scale: 1.55, stretch: 1.2 }
 ];
 export const MAX_TIER = TIERS.length - 1;
 
