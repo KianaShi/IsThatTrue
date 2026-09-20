@@ -11,7 +11,7 @@ import { squareToWorld } from './board.js';
 // turns in a game: the first Dig In on the board comes out black, the next
 // white, and so on, whichever piece it lands on.
 // `stretch` lengthens a piece vertically only, without making it wider.
-const TIERS = [
+export const TIERS = [
 	{ type: PAWN, scale: 1, stretch: 1.2 },
 	{ type: KNIGHT, scale: 1.25 },
 	{ type: BISHOP, scale: 1.4 },
