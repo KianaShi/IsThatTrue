@@ -5,6 +5,21 @@ import vm from 'node:vm';
 const source=readFileSync(new URL('../src/main.js',import.meta.url),'utf8');
 function extract(start,end){return source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)));}
 
+test('unfinished stories are disabled and cannot replace the active case',()=>{
+ const cards=['s1','s2','s3'].map(id=>({dataset:{id},classList:{toggle(){}},tease:{},querySelector(){return this.tease;}}));
+ const context={settings:{story:'s1'},document:{querySelectorAll(){return cards;}},menu:{save(){throw new Error('Unavailable story was selected');}}};
+ vm.createContext(context);vm.runInContext(extract('function paintDynamic()', '// ── case file'),context);
+ context.paintDynamic();context.pickStory('s2');context.pickStory('s3');
+ assert.equal(cards[0].disabled,false);assert.equal(cards[1].disabled,true);assert.equal(cards[2].disabled,true);
+ assert.match(cards[1].tease.textContent,/Coming soon/);assert.equal(context.settings.story,'s1');
+});
+
+test('saved unfinished story selections load the completed case',()=>{
+ const context={loadSettings:()=>({story:'s3'})};
+ vm.createContext(context);vm.runInContext(extract('const settings =', 'const audio =')+'globalThis.selected = settings.story;',context);
+ assert.equal(context.selected,'s1');
+});
+
 test('actual endCase handles timeout once, retains discarded evidence, closes overlays',()=>{
  const calls=[];const elements=new Map();const caseData={};
  const context={playing:true,audio:{solve(){calls.push('solve');},fail(){calls.push('fail');}},
