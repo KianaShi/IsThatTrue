@@ -137,7 +137,7 @@ export function createAudio() {
 
 	// The recorded loop takes over during an investigation. A generation token
 	// prevents an old play promise or fade from affecting a newer session.
-	const TRACK_SRC = new URL('../../odyssey_60s_loop.wav', import.meta.url).href;
+	const TRACK_SRC = new URL('../../assets/audio/odyssey_60s_loop.wav', import.meta.url).href;
 	const TRACK_VOLUME = 0.55;
 	let track = null;
 	let trackWanted = false;

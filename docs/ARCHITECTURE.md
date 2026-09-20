@@ -29,6 +29,8 @@ src/
 tests/                  node:test suites for scoring and game-flow state
 tools/                  dev-only piece renderer / exporter (not shipped)
 assets/                 suspect portraits, evidence photos, chess piece renders
+  audio/                background music (odyssey_60s_loop.wav is the one the game loads)
+  video/                footage clips (not currently loaded by the game)
 data/leakdata.xlsx      source spreadsheet the Story 1 deck was authored from
 ```
 

@@ -11,6 +11,10 @@
 
 </div>
 
+<div align="center">
+<img src="docs/img/title-screen.webp" alt="Red Herring title screen: a chess board in a snowy forest clearing" width="560">
+</div>
+
 ---
 
 ## 🕵️ The premise
@@ -98,7 +102,7 @@ src/
   scene/ world/   renderer, lighting, post-processing, sky, snow, forest
   ui/             menus, HUD, case report, styles
 tests/            scoring and game-flow tests
-assets/           portraits, evidence photos, piece renders
+assets/           portraits, evidence photos, piece renders, audio/, video/
 docs/             architecture notes and README images
 ```
 
