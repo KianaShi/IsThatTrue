@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Murder Mystery</title>
+<meta name="description" content="Murder Mystery — a snowbound whodunit. Pick a case, choose your pressure, and find every clue before the trail goes cold.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070c15'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23d40027' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%23ff3860'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="./src/ui/ui.css">
+</head>
+<body data-screen="">
+
+<canvas id="stage"></canvas>
+
+<button id="gear" aria-label="Settings" title="Settings">
+	<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+		<circle cx="12" cy="12" r="3.2"/>
+		<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.01a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h.01a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v.01a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+	</svg>
+</button>
+
+<main id="ui">
+
+	<!-- ── title ─────────────────────────────────────────────── -->
+	<section class="screen" data-screen="title">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline">Case File · Winter Circuit</p>
+				<h1 class="title">MURDER<br><b>MYSTERY</b></h1>
+				<p class="tagline">A snowbound clearing. One lantern still burning.<br>The snow saw everything — make it talk.</p>
+			</header>
+			<nav class="menu" data-menu="title">
+				<button class="mi big" data-act="stories"><i></i><span>Story</span><em class="arr">›</em></button>
+				<button class="mi big primary" data-act="start"><i></i><span>Game Start</span><em class="arr">›</em></button>
+			</nav>
+			<p class="foot">Tap to choose · ↑↓ Enter on keyboard</p>
+		</div>
+	</section>
+
+	<!-- ── story select ──────────────────────────────────────── -->
+	<section class="screen" data-screen="story">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline">Choose the case</p>
+				<h2 class="subtitle">STORY</h2>
+			</header>
+			<nav class="menu cards" data-menu="story">
+				<button class="mi card" data-act="story" data-id="s1">
+					<span class="num">Story 1</span>
+					<span class="cname">The Leak</span>
+					<span class="ctease">Project Helix — the company’s best-kept secret — just leaked. Demo footage. Eval results. Safety findings nobody outside the building was supposed to see.</span>
+					<b class="picked-tag">Active Case</b>
+				</button>
+				<button class="mi card" data-act="story" data-id="s2">
+					<span class="num">Story 2</span>
+					<span class="cname">The Silent Clearing</span>
+					<span class="ctease">Her map was left on the stone table. One landmark was crossed out in red.</span>
+					<b class="picked-tag">Active Case</b>
+				</button>
+				<button class="mi card" data-act="story" data-id="s3">
+					<span class="num">Story 3</span>
+					<span class="cname">Blood on the Snow</span>
+					<span class="ctease">No tracks lead in. None lead out. Yet someone was here, waiting.</span>
+					<b class="picked-tag">Active Case</b>
+				</button>
+				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
+			</nav>
+		</div>
+	</section>
+
+	<!-- ── difficulty select ─────────────────────────────────── -->
+	<section class="screen" data-screen="difficulty">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline">Choose the pressure</p>
+				<h2 class="subtitle">DIFFICULTY</h2>
+			</header>
+			<nav class="menu" data-menu="difficulty">
+				<button class="mi row" data-act="level" data-id="easy"><i></i><span>Easy</span><b class="meta">3 clues · 5:00</b></button>
+				<button class="mi row" data-act="level" data-id="medium"><i></i><span>Medium</span><b class="meta">4 clues · 4:00</b></button>
+				<button class="mi row" data-act="level" data-id="hard"><i></i><span>Hard</span><b class="meta">5 clues · 3:00</b></button>
+				<button class="mi row hell" data-act="level" data-id="hell"><i></i><span>Hell</span><b class="meta">6 clues · 2:00</b></button>
+				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
+			</nav>
+			<p class="foot">More clues, less time — the snow won’t wait</p>
+		</div>
+	</section>
+
+	<!-- ── settings ──────────────────────────────────────────── -->
+	<section class="screen" data-screen="settings">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline">Adjust</p>
+				<h2 class="subtitle">SETTINGS</h2>
+			</header>
+			<nav class="menu" data-menu="settings">
+				<button class="mi val" data-act="music"><i></i><span>Music</span><b class="v">On</b></button>
+				<button class="mi val" data-act="sound"><i></i><span>Sounds</span><b class="v">On</b></button>
+				<button class="mi val" data-act="timer"><i></i><span>Timer</span><b class="v">On</b></button>
+				<button class="mi val" data-act="quality"><i></i><span>Graphics</span><b class="v">High</b></button>
+				<button class="mi val" data-act="snow"><i></i><span>Snowfall</span><b class="v">Heavy</b></button>
+				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
+			</nav>
+			<p class="foot">Tap to switch · Saved on this device</p>
+		</div>
+	</section>
+
+	<!-- ── case file: story data screen ──────────────────────── -->
+	<section class="screen" data-screen="casefile">
+		<div class="col">
+			<p class="dossier-start" data-slot="cf-start">Your investigation starts now.</p>
+			<header class="masthead">
+				<p class="overline" data-slot="cf-over">Case Briefing</p>
+				<h2 class="subtitle" data-slot="cf-title">THE LEAK</h2>
+			</header>
+			<div class="brief-meta" data-slot="cf-info"></div>
+			<div class="dossier-body" data-slot="cf-body"></div>
+			<section class="dossier-suspects">
+				<p class="sect-label">Still in the building</p>
+				<div class="suspect-grid" data-slot="cf-suspects"></div>
+				<p class="suspects-note" data-slot="cf-suspects-note"></p>
+			</section>
+			<section class="dossier-mission">
+				<p class="sect-label">Your mission</p>
+				<div data-slot="cf-mission"></div>
+				<p class="mechanics" data-slot="cf-mechanics"></p>
+			</section>
+			<nav class="menu" data-menu="casefile">
+				<button class="mi big primary" data-act="continue"><i></i><span>Continue</span><em class="arr">›</em></button>
+				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
+			</nav>
+		</div>
+	</section>
+
+	<!-- ── launch countdown ──────────────────────────────────── -->
+	<section class="screen" data-screen="intro">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline" data-slot="intro-over">Case File · Story 1</p>
+				<h2 class="subtitle" data-slot="intro-title">The Leak</h2>
+			</header>
+			<div class="brief-meta" data-slot="intro-meta"></div>
+			<p class="countdown-line">Your time starts now</p>
+			<div class="countdown" data-slot="countdown">3</div>
+			<nav class="menu" data-menu="intro">
+				<button class="mi big primary" data-act="begin"><i></i><span>Begin Investigation</span><em class="arr">›</em></button>
+				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
+			</nav>
+		</div>
+	</section>
+
+	<!-- ── result ────────────────────────────────────────────── -->
+	<section class="screen" data-screen="result">
+		<div class="col">
+			<header class="masthead">
+				<p class="overline" data-slot="result-over">Case closed</p>
+				<h2 class="title res" data-slot="result-title">CASE SOLVED</h2>
+			</header>
+			<div class="stats" data-slot="result-stats"></div>
+			<nav class="menu" data-menu="result">
+				<button class="mi big primary" data-act="retry"><i></i><span>Retry the Case</span><em class="arr">›</em></button>
+				<button class="mi ghostbtn" data-act="quit"><i></i><span>‹ Back to Title</span></button>
+			</nav>
+		</div>
+	</section>
+
+</main>
+
+<!-- ── in-game head-up display ────────────────────────────────── -->
+<div id="hud" hidden>
+
+	<div class="hud-case">
+		<span class="hud-story" data-slot="hud-story">The Leak</span>
+		<span class="hud-diff" data-slot="hud-diff">Easy</span>
+		<span class="hud-clues" data-slot="hud-clues">Clues 0 / 3</span>
+	</div>
+
+	<div class="hud-mid">
+		<div class="hud-timer" data-slot="hud-timer">6:00</div>
+		<div class="hud-pips" data-slot="hud-pips"></div>
+	</div>
+
+	<button class="tb hud-abandon" data-tool="abandon" title="Abandon the case" aria-label="Abandon the case">
+		<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+	</button>
+
+	<button class="tb hud-suspects" data-tool="suspects" title="Open the suspect board" aria-label="Open the suspect board">
+		<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5.5" r="2.5"/><path d="M2.5 14c.7-3 2.7-4.5 5.5-4.5s4.8 1.5 5.5 4.5"/></svg>
+	</button>
+
+	<p class="hud-hint" data-slot="hint">Drag to look around · Tap a square to turn it over</p>
+	<div class="hud-toast" data-slot="toast"></div>
+
+	<!-- the basket, always visible: evidence lands here the moment it's held -->
+	<div class="basketbar" data-slot="basketbar">
+		<span class="basketbar-label">Basket</span>
+		<div class="basketbar-slots" data-slot="basketbar-slots"></div>
+	</div>
+
+	<!-- square reveal card: what a tapped square turns over -->
+	<div class="tile" data-slot="tile" hidden>
+		<div class="tile-card">
+			<div class="tile-head">
+				<span class="tile-kind" data-slot="tile-kind">Clue</span>
+				<span class="tile-sq" data-slot="tile-sq">D4</span>
+			</div>
+			<div class="tile-media" data-slot="tile-media" hidden></div>
+			<div class="tile-label" data-slot="tile-label">Access Log</div>
+			<p class="tile-text" data-slot="tile-text"></p>
+			<div class="tile-actions">
+				<button class="tile-dig" data-tool="dig"><span>Dig In</span></button>
+				<button class="tile-hold" data-tool="hold"><span>Add to Basket</span></button>
+				<button class="tile-discard" data-tool="discard"><span>Discard</span></button>
+			</div>
+			<button class="mi big primary tile-close" data-tool="close-tile"><i></i><span>Back to the Board</span><em class="arr">›</em></button>
+		</div>
+	</div>
+
+	<!-- suspect board: a screen of its own, opened from the hud button -->
+	<div class="suspectboard" data-slot="suspectboard" hidden>
+		<div class="sb-card">
+			<svg class="sb-connections" data-slot="sb-connections"></svg>
+
+			<div class="sb-head">
+				<p class="sb-title">Who does this evidence name?</p>
+				<button class="tb sb-close" data-tool="close-suspects" aria-label="Close">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+				</button>
+			</div>
+
+			<div class="sb-held">
+				<p class="cb-title">Held, not yet placed <span data-slot="cb-count">(0)</span></p>
+				<div class="sb-heldlist" data-slot="cb-basket"></div>
+			</div>
+
+			<div class="sb-suspects" data-slot="cb-suspects"></div>
+
+			<p class="sb-note">This board is just for thinking out loud — nothing here is scored. When you're ready to answer for real, call it.</p>
+			<button class="cb-submit" data-tool="accuse">Call Checkmate →</button>
+		</div>
+	</div>
+
+	<!-- the real answer, on its own screen — separate from the thinking board -->
+	<div class="accusescreen" data-slot="accusescreen" hidden>
+		<div class="ac-card">
+			<div class="sb-head">
+				<p class="sb-title">Checkmate?</p>
+				<button class="tb sb-close" data-tool="close-accuse" aria-label="Back to the board">
+					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+				</button>
+			</div>
+			<div class="ac-questions" data-slot="ac-questions"></div>
+			<button class="cb-submit" data-tool="submit">Submit Accusation</button>
+			<p class="cb-result" data-slot="cb-result"></p>
+		</div>
+	</div>
+
+</div>
+
+<!-- corner loader: the five-second passage between briefing and scene -->
+<div id="travel" hidden>
+	<div class="travel-ring"></div>
+	<div class="travel-text">Approaching the scene<span class="travel-dots"><i>.</i><i>.</i><i>.</i></span></div>
+	<div class="travel-bar"></div>
+</div>
+
+<div id="boot">
+	<p class="overline">Murder Mystery</p>
+	<p class="boot-msg" data-slot="boot">Lighting the lanterns…</p>
+</div>
+
+<script type="importmap">
+{
+	"imports": {
+		"three": "./vendor/three.module.min.js",
+		"three/addons/": "./vendor/addons/"
+	}
+}
+</script>
+<script type="module" src="./src/main.js"></script>
+
+</body>
+</html>
