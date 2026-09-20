@@ -8,7 +8,7 @@ export const OPTIONS = {
 	snow: [{ id: 'heavy', label: 'Heavy' }, { id: 'light', label: 'Light' }, { id: 'off', label: 'Off' }]
 };
 
-const DEFAULTS = { story: 's1', level: 'easy', music: 'on', sound: 'on', timer: 'on', quality: 'high', snow: 'heavy' };
+const DEFAULTS = { story: 's1', music: 'on', sound: 'on', timer: 'on', quality: 'high', snow: 'heavy' };
 
 export function loadSettings() {
 	try {

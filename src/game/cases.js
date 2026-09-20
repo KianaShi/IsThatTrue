@@ -1,4 +1,4 @@
-// Case files and difficulty contracts. Pure data — the menu, the briefing
+// Case files and the single play contract. Pure data — the menu, the briefing
 // screen and the result screen all read from here.
 
 export const STORIES = {
@@ -366,12 +366,9 @@ export const STORIES = {
 	}
 };
 
-export const LEVELS = {
-	easy:   { label: 'Easy',   clues: 3, time: 300, note: 'A stroll through the snow' },
-	medium: { label: 'Medium', clues: 4, time: 240, note: 'The trail is warm' },
-	hard:   { label: 'Hard',   clues: 5, time: 180, note: 'The snow keeps its secrets' },
-	hell:   { label: 'Hell',   clues: 6, time: 120, note: 'No mercy. No mistakes.', subtle: true }
-};
+// The one contract every run plays under: how many clues the intro promises and the
+// clock, in seconds.
+export const LEVEL = { clues: 3, time: 300 };
 
 // Decoy tiles used to pad a deck when a story ships only raw clue strings.
 // They waste the detective's time — that is their whole job.

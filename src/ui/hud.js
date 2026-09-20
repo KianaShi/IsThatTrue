@@ -19,9 +19,8 @@ export function createHud({ onTool }) {
 		show() { root.hidden = false; },
 		hide() { root.hidden = true; },
 
-		setCase(storyName, diffLabel) {
+		setCase(storyName) {
 			$('hud-story').textContent = storyName;
-			$('hud-diff').textContent = diffLabel;
 		},
 
 		// null hides the timer entirely (Timer: off in settings).
