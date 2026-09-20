@@ -10,7 +10,8 @@ import { createBoard, worldToSquare } from './game/board.js';
 import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
 import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
-import { evaluate } from './game/evaluation.js';
+import { QUESTIONS } from './game/questions.js';
+import { renderCaseReport } from './ui/case-report.js';
 import { createHud } from './ui/hud.js';
 import { createMenu, loadSettings } from './ui/menu.js';
 import { createAudio } from './core/audio.js';
@@ -63,13 +64,7 @@ const SUSPECTS = [
 ];
 const SLOTS_PER_SUSPECT = 6;
 
-// The real answer lives here, not on the thinking board — it's asked as two
-// direct questions on the accusation screen.
-const QUESTIONS = [
-	{ key: 'leaker', text: 'Who leaked the original video?', answer: 'noah' },
-	{ key: 'editor', text: 'Who altered the second video?', answer: 'olivia' }
-];
-const accuseAnswers = { leaker: null, editor: null };
+const accuseAnswers = Object.fromEntries(QUESTIONS.map(q => [q.key, null]));
 
 snowfall.setDensity(settings.snow === 'heavy' ? 1 : settings.snow === 'light' ? 0.45 : 0);
 
@@ -81,10 +76,9 @@ let timeLeft = 0;
 let elapsed = 0;
 // The dealt board: 0x88 square -> tile from the story's deck.
 const tiles = new Map();
+const discardedTiles = new Map();
 let currentSq = -1;
 let dugCount = 0, discardedCount = 0;
-// Every tile dealt this game, discarded ones included, for the end-of-case evaluation.
-let fullDeck = [];
 // Assignments are the only place evidence actually "moves" — Hold just
 // flags a tile as kept; the piece stays exactly where it was dealt.
 const assignments = { ethan: [], avery: [], olivia: [], noah: [] };
@@ -159,7 +153,7 @@ function doStar() {
  */
 function toggleStar(sq) {
 	const tile = tiles.get(sq);
-	if (!tile) return false;
+	if (!playing || !tile) return false;
 	if (!tile.starred && [...tiles.values()].filter(t => t.starred).length >= MAX_STARS) {
 		hud.toast(`You can star ${MAX_STARS} pieces. Remove a star first.`);
 		return false;
@@ -216,6 +210,7 @@ function doDiscard() {
 	const tile = tiles.get(currentSq);
 	if (!tile) return;
 	if (tile.placedTo) assignments[tile.placedTo] = assignments[tile.placedTo].filter(i => i.sq !== currentSq);
+	discardedTiles.set(currentSq, { ...tile, discarded: true, starred: false, held: false, placedTo: null });
 	tiles.delete(currentSq);
 	renderStars();
 	discardedCount++;
@@ -249,12 +244,13 @@ function unassign(key, sq) {
  * @returns {void}
  */
 function doSubmit() {
-	const resultEl = document.querySelector('[data-slot="cb-result"]');
-	if (QUESTIONS.some(q => !accuseAnswers[q.key])) {
-		resultEl.textContent = 'Answer both questions before you call it.';
+	if (!playing) return;
+	const missing = QUESTIONS.find(q => !accuseAnswers[q.key]);
+	if (missing) {
+		document.querySelector('[data-slot="cb-result"]').textContent = 'Answer all five questions before submitting your final theory.';
+		document.querySelector(`[name="answer-${missing.key}"]`)?.focus();
 		return;
 	}
-	if (!playing) return;
 	endCase(QUESTIONS.every(q => accuseAnswers[q.key] === q.answer), 'submitted');
 }
 
@@ -264,6 +260,7 @@ function doSubmit() {
  * @returns {void}
  */
 function openSuspectboard() {
+	hud.hideTile();
 	sbBasketOpen = false;
 	renderCaseboard();
 	document.querySelector('[data-slot="suspectboard"]').hidden = false;
@@ -280,38 +277,62 @@ function closeSuspectboard() {
 }
 
 // The accusation screen: a separate, deliberate "answer for real" step —
-// the suspect board above it is scratch space and is never scored.
+// The report also evaluates evidence choices and stars from the suspect board.
 function openAccuseScreen() {
+	hud.hideTile();
 	closeSuspectboard();
 	document.querySelector('[data-slot="cb-result"]').textContent = '';
 	renderAccuseScreen();
 	document.querySelector('[data-slot="accusescreen"]').hidden = false;
+	document.querySelector('.ac-choice input:checked, .ac-choice input')?.focus();
 	audio.confirm();
 }
 
 function closeAccuseScreen() {
 	document.querySelector('[data-slot="accusescreen"]').hidden = true;
+	document.querySelector('[data-tool="suspects"]')?.focus();
 	audio.back();
 }
 
 function renderAccuseScreen() {
 	const el = document.querySelector('[data-slot="ac-questions"]');
-	el.innerHTML = QUESTIONS.map(q => `
-		<div class="ac-q">
-			<p class="ac-q-text">${q.text}</p>
-			<div class="ac-choices">${SUSPECTS.map(s => `
-				<button class="ac-choice ${accuseAnswers[q.key] === s.key ? 'selected' : ''}" data-choose="${q.key}:${s.key}">${s.name}</button>`).join('')}</div>
-		</div>`).join('');
+	el.innerHTML = QUESTIONS.map((q, index) => `
+		<fieldset class="ac-q">
+			<legend class="ac-q-text"><span class="ac-number">${index + 1}</span> ${q.text}</legend>
+			<div class="ac-choices">${(q.choices || SUSPECTS).map(s => `
+				<label class="ac-choice ${accuseAnswers[q.key] === s.key ? 'selected' : ''}">
+					<input type="radio" name="answer-${q.key}" value="${s.key}" data-question="${q.key}" ${accuseAnswers[q.key] === s.key ? 'checked' : ''}>
+					<span>${s.name}</span>
+				</label>`).join('')}</div>
+		</fieldset>`).join('');
+	updateAnswerProgress();
 }
 
-document.querySelector('[data-slot="accusescreen"]').addEventListener('click', event => {
-	const choice = event.target.closest('[data-choose]');
-	if (!choice) return;
-	const [key, suspect] = choice.dataset.choose.split(':');
-	accuseAnswers[key] = suspect;
-	renderAccuseScreen();
+function updateAnswerProgress() {
+	const answered = QUESTIONS.filter(q => accuseAnswers[q.key]).length;
+	document.querySelector('[data-slot="ac-progress"]').textContent = `${answered} of ${QUESTIONS.length} answered`;
+}
+
+document.querySelector('[data-slot="accusescreen"]').addEventListener('change', event => {
+	const input = event.target.closest('input[data-question]');
+	if (!playing || !input) return;
+	accuseAnswers[input.dataset.question] = input.value;
+	// Keep the inputs in place so keyboard focus and scroll position survive.
+	document.querySelectorAll('.ac-choice input').forEach(radio => radio.closest('.ac-choice').classList.toggle('selected', radio.checked));
+	document.querySelector('[data-slot="cb-result"]').textContent = '';
+	updateAnswerProgress();
 });
 
+
+// Keep keyboard focus inside the final-theory dialog and return safely.
+document.querySelector('[data-slot="accusescreen"]').addEventListener('keydown', event => {
+	if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeAccuseScreen(); return; }
+	if (event.key !== 'Tab') return;
+	const focusable = [...event.currentTarget.querySelectorAll('button:not(:disabled), input:not(:disabled)')];
+	const first = focusable[0], last = focusable[focusable.length - 1];
+	if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+	else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 
 // Which suspect the board is showing, and whether the basket drawer is up.
 let sbIndex = 0;
@@ -589,6 +610,7 @@ document.getElementById('gear').addEventListener('click', () => {
  */
 function dealTiles(deck) {
 	tiles.clear();
+	discardedTiles.clear();
 	board.clearMarks();
 	evidencePieces.reset();
 	for (const key of Object.keys(assignments)) assignments[key] = [];
@@ -611,6 +633,7 @@ function dealTiles(deck) {
 		tile.held = false;
 		tile.placedTo = null;
 		tile.starred = false;
+		tile.discarded = false;
 		tiles.set(sq, tile);
 		evidencePieces.spawn(sq);
 	});
@@ -642,7 +665,6 @@ function startGame() {
 	const l = level();
 	const deck = buildDeck(s);
 	needed = deck.length;
-	fullDeck = deck;
 	dugCount = 0;
 	discardedCount = 0;
 	elapsed = 0;
@@ -682,58 +704,35 @@ function toTitle() {
  * @param {'submitted'|'timeout'} reason - What ended the case.
  * @returns {void}
  */
-function endCase(solved, reason) {
+function endCase(solved, reason = 'submitted') {
 	if (!playing) return;
 	playing = false;
 	if (solved) audio.solve(); else audio.fail();
-
-	menu.slot('result-over', reason === 'timeout' ? 'Time ran out' : 'Answers submitted');
-
-	const report = evaluate({
-		questions: QUESTIONS,
-		answers: accuseAnswers,
-		placed: Object.entries(assignments)
-			.flatMap(([suspect, list]) => list.map(i => ({ tile: tiles.get(i.sq), suspect })))
-			.filter(p => p.tile),
-		starred: [...tiles.values()].filter(t => t.starred),
-		deck: fullDeck,
-		slots: SUSPECTS.length * SLOTS_PER_SUSPECT,
-		elapsed,
-		limit: timerOn() ? level().time : null,
-		timedOut: reason === 'timeout'
+	const titleEl = document.querySelector('[data-slot="result-title"]');
+	titleEl.textContent = solved ? 'CASE SOLVED' : reason === 'timeout' ? 'TIME’S UP' : 'CASE REVIEW';
+	titleEl.classList.toggle('cold', !solved);
+	menu.slot('result-over', reason === 'timeout' ? 'Time ran out · case review' : 'Answers submitted · case review');
+	const records = [...tiles.values(), ...discardedTiles.values()];
+	renderCaseReport(document.querySelector('[data-slot="case-report"]'), {
+		records, questions: QUESTIONS, answers: accuseAnswers, solutionAvailable: story() === STORIES.s1, elapsed, limit: timerOn() ? level().time : null, timedOut: reason === 'timeout'
 	});
-	const RING = 2 * Math.PI * 52;
-	document.querySelector('[data-slot="result-eval"]').innerHTML = `
-		<div class="eval-ring">
-			<svg viewBox="0 0 120 120" aria-hidden="true">
-				<circle class="eval-ring-track" cx="60" cy="60" r="52"/>
-				<circle class="eval-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="${RING.toFixed(1)}" stroke-dashoffset="${(RING * (1 - report.overall / 100)).toFixed(1)}"/>
-			</svg>
-			<div class="eval-ring-label"><b>${report.overall}%</b><small>Overall</small></div>
-		</div>
-		<div class="eval-measures">${report.measures.map(x => `
-			<div class="eval-row"><b>${x.name}</b><div class="eval-grade"><b>${x.label}</b><small>${x.note}</small></div></div>`).join('')}
-		</div>`;
-
-	const starred = [...tiles.values()].filter(t => t.starred).length;
-	const placed = Object.values(assignments).reduce((n, list) => n + list.length, 0);
 	document.querySelector('[data-slot="result-stats"]').innerHTML = [
-		['Discarded', discardedCount],
-		['Starred', `${starred} / ${MAX_STARS}`],
-		['Placed on suspects', placed]
+		['Case', story().name], ['Evidence dug', `${dugCount} / ${needed}`],
+		['Time investigating', fmt(elapsed)], ['Discarded', discardedTiles.size],
+		['Starred', records.filter(t => t.starred && !t.discarded).length],
+		['Placed on suspects', records.filter(t => t.placedTo && !t.discarded).length]
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
-
-	setTimeout(() => {
-		hud.hide();
-		hud.hideTile();
-		document.querySelector('[data-slot="suspectboard"]').hidden = true;
-		document.querySelector('[data-slot="accusescreen"]').hidden = true;
-		tiles.clear();
-		board.clearMarks();
-		evidencePieces.reset();
-		stage.setAttract(true);
-		menu.show('result');
-	}, 1100);
+	hud.hide();
+	hud.hideTile();
+	document.querySelector('[data-slot="suspectboard"]').hidden = true;
+	document.querySelector('[data-slot="accusescreen"]').hidden = true;
+	board.clearMarks();
+	evidencePieces.reset();
+	stage.setAttract(true);
+	menu.show('result');
+	document.querySelector('.screen[data-screen="result"]').scrollTop = 0;
+	titleEl.setAttribute('tabindex', '-1');
+	titleEl.focus({ preventScroll: true });
 }
 
 // ── pointer ──────────────────────────────────────────────────────
