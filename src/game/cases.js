@@ -366,9 +366,8 @@ export const STORIES = {
 	}
 };
 
-// The one contract every run plays under: how many clues the intro promises and the
-// clock, in seconds.
-export const LEVEL = { clues: 3, time: 300 };
+// The one contract every run plays under: the clock, in seconds.
+export const LEVEL = { time: 300 };
 
 // Decoy tiles used to pad a deck when a story ships only raw clue strings.
 // They waste the detective's time — that is their whole job.

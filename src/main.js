@@ -127,7 +127,7 @@ function doDig() {
 	const levels = tile.digLevels || [];
 	const max = Math.min(levels.length, MAX_TIER);
 	if (tile.dugLevel >= max) return;
-	if (tile.dugLevel === 0) { dugCount++; hud.setClues(dugCount, needed); }
+	if (tile.dugLevel === 0) dugCount++;
 	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
@@ -513,7 +513,6 @@ function fillIntro() {
 	menu.slot('intro-title', s.name);
 	document.querySelector('[data-slot="intro-meta"]').innerHTML = [
 		['Case', s.name],
-		['Evidence', `${LEVEL.clues} clues hidden at the scene`],
 		['Time', timerOn() ? `${fmt(LEVEL.time)} — every piece of information costs attention` : 'No time limit']
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
 }
@@ -643,8 +642,8 @@ function startGame() {
 	menu.hide();
 	hud.show();
 	hud.setCase(s.name);
-	hud.setClues(0, needed);
-	hud.setTimer(timerOn() ? timeLeft : null);
+	hud.setClues(needed);
+	hud.setTimer(timerOn() ? timeLeft : null, LEVEL.time);
 	hud.setHint('Drag to look around · Tap a piece to examine it');
 	stage.setAttract(false);
 }
@@ -793,7 +792,7 @@ stage.onUpdate((dt, time) => {
 		timerPaint += dt;
 		if (timerPaint > 0.2) {
 			timerPaint = 0;
-			if (timerOn()) hud.setTimer(timeLeft);
+			if (timerOn()) hud.setTimer(timeLeft, LEVEL.time);
 		}
 	}
 });
