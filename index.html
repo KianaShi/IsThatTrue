@@ -6,7 +6,7 @@
 <title>Red Herring</title>
 <meta name="description" content="Red Herring — a whodunit about a leak the night before a launch. Pick a case, choose your pressure, and decide which clues to trust before time runs out.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070c15'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23d40027' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%23ff3860'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="./src/ui/ui.css">
+<link rel="stylesheet" href="./src/ui/ui.css?v=question-results-1">
 </head>
 <body data-screen="">
 
@@ -134,13 +134,13 @@
 	<section class="screen" data-screen="result">
 		<div class="col">
 			<header class="masthead">
-				<p class="overline" data-slot="result-over">Case closed</p>
-				<h2 class="title res" data-slot="result-title">CASE SOLVED</h2>
+				<p class="overline" data-slot="result-over">Answers submitted</p>
+				<h2 class="title res" data-slot="result-title">CASE CLOSED</h2>
 			</header>
+			<div class="case-report" data-slot="case-report"></div>
 			<div class="stats" data-slot="result-stats"></div>
 			<nav class="menu" data-menu="result">
-				<button class="mi big primary" data-act="retry"><i></i><span>Retry the Case</span><em class="arr">›</em></button>
-				<button class="mi ghostbtn" data-act="quit"><i></i><span>‹ Back to Title</span></button>
+				<button class="mi ghostbtn" data-act="quit"><i></i><span>Back to Title</span></button>
 			</nav>
 		</div>
 	</section>
@@ -236,17 +236,20 @@
 	</div>
 
 	<!-- the real answer, on its own screen — separate from the thinking board -->
-	<div class="accusescreen" data-slot="accusescreen" hidden>
+	<div class="accusescreen" data-slot="accusescreen" role="dialog" aria-modal="true" aria-labelledby="final-theory-title" hidden>
 		<div class="ac-card">
 			<div class="sb-head">
-				<p class="sb-title">Checkmate?</p>
+				<h2 class="sb-title" id="final-theory-title">Your final theory</h2>
 				<button class="tb sb-close" data-tool="close-accuse" aria-label="Back to the board">
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
 				</button>
 			</div>
+			<p class="ac-intro">Choose one answer for each question. You can return to the board before submitting.</p>
+			<p class="ac-progress" data-slot="ac-progress" aria-live="polite">0 of 5 answered</p>
 			<div class="ac-questions" data-slot="ac-questions"></div>
-			<button class="cb-submit" data-tool="submit">Submit Accusation</button>
-			<p class="cb-result" data-slot="cb-result"></p>
+			<p class="ac-submit-note">Submitting ends this round and reveals the full solution.</p>
+			<button class="cb-submit" data-tool="submit">Submit final theory</button>
+			<p class="cb-result" data-slot="cb-result" role="status"></p>
 		</div>
 	</div>
 

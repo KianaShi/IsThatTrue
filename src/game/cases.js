@@ -378,10 +378,10 @@ const DECOYS = [
 // as-is; a story with only raw clue strings gets each clue dealt as a real
 // tile plus a handful of decoys to keep the board dangerous.
 export const buildDeck = story =>
-	story.deck || [
+	(story.deck || [
 		...story.clues.map(text => ({ kind: 'clue', label: 'Evidence', real: true, text })),
 		...DECOYS
-	];
+	]).map(tile => ({ ...tile, digLevels: [...(tile.digLevels || [])], connectsTo: [...(tile.connectsTo || [])] }));
 
 export const fmt = seconds => {
 	const total = Math.max(0, Math.ceil(seconds));

@@ -27,7 +27,7 @@ export function createMenu({ settings, onAction, onSetting, onPaint, audio }) {
 	let index = 0;
 	let stack = [];
 
-	const items = () => current ? [...screens.get(current).querySelectorAll('.mi')] : [];
+	const items = () => current ? [...screens.get(current).querySelectorAll('.mi:not(:disabled)')] : [];
 
 	function paint() {
 		items().forEach((el, i) => {
