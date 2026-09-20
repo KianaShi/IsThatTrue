@@ -181,6 +181,11 @@ function doSubmit() {
 	audio[allRight ? 'solve' : 'fail']?.();
 }
 
+/**
+ * Open the suspect board on whichever suspect was last shown, with the basket
+ * drawer closed so the player always lands on the slots first.
+ * @returns {void}
+ */
 function openSuspectboard() {
 	sbBasketOpen = false;
 	renderCaseboard();
@@ -188,6 +193,10 @@ function openSuspectboard() {
 	audio.confirm();
 }
 
+/**
+ * Hide the suspect board (the basket drawer state is reset on the next open).
+ * @returns {void}
+ */
 function closeSuspectboard() {
 	document.querySelector('[data-slot="suspectboard"]').hidden = true;
 	audio.back();
