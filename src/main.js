@@ -440,7 +440,7 @@ const menu = createMenu({
 	onPaint: paintDynamic,
 	onAction: (act, el) => {
 		if (act === 'stories') menu.show('story', { push: true });
-		else if (act === 'start') menu.show('difficulty', { push: true });
+		else if (act === 'start') openCasefile();
 		else if (act === 'story') pickStory(el.dataset.id);
 		else if (act === 'level') pickLevel(el.dataset.id);
 		else if (act === 'settings') menu.show('settings', { push: true });
@@ -455,6 +455,17 @@ const menu = createMenu({
 function paintDynamic() {
 	document.querySelectorAll('[data-act="story"]').forEach(el =>
 		el.classList.toggle('picked', el.dataset.id === settings.story));
+}
+
+/**
+ * Game Start: open the case briefing of the first playable story (the one with
+ * a written brief), whatever story an older session had saved. Its Continue button
+ * leads on to the difficulty choice.
+ * @returns {void}
+ */
+function openCasefile() {
+	const [id] = Object.entries(STORIES).find(([, s]) => s.brief) || [settings.story];
+	pickStory(id);
 }
 
 function pickStory(id) {
