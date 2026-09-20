@@ -1036,3 +1036,34 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 	.mi { min-height: 58px; }
 	.tile { place-items: center; }
 }
+
+/* ── stars: evidence the player marks as most important ───────── */
+.tile-head-right { display: flex; align-items: center; gap: 10px; }
+.tile-star {
+	display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+	background: none; border: none; cursor: pointer; color: var(--faint);
+}
+.tile-star svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+.tile-star:hover { color: var(--snow); }
+.tile-star.on { color: #f5c518; }
+.tile-star.on svg { fill: #f5c518; }
+
+.hud-stars { display: grid; gap: 4px; justify-items: start; margin-top: 2px; }
+.hud-stars-count { font-size: 9px; letter-spacing: .3em; text-transform: uppercase; color: #f5c518; }
+.hud-star-item {
+	display: flex; align-items: center; gap: 6px; max-width: 220px; padding: 2px 0;
+	background: none; border: none; cursor: pointer; font-family: inherit;
+	font-size: 11px; color: var(--snow); text-shadow: 0 1px 6px rgba(0, 0, 0, .7); text-align: left;
+}
+.hud-star-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hud-star-item .arr { color: #f5c518; }
+.hud-star-item:hover .hud-star-name { text-decoration: underline; }
+
+/* Every tile on the suspect board carries a star toggle in its top-left corner: yellow when starred. */
+.sb-slot-star {
+	position: absolute; top: 0; left: 0; z-index: 2; width: 26px; height: 26px;
+	display: grid; place-items: center; font-size: 15px; line-height: 1;
+	color: rgba(255, 255, 255, .55); cursor: pointer;
+}
+.sb-slot-star:hover { color: var(--snow); }
+.sb-slot-star.on { color: #f5c518; }
