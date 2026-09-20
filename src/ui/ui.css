@@ -488,7 +488,7 @@ body.playing #gear, body[data-screen="settings"] #gear { display: none; }
 	border-bottom: 1px solid var(--ghost);
 }
 .stats span { font-size: 9.5px; letter-spacing: .4em; text-transform: uppercase; color: var(--faint); }
-.stats b { font-weight: 300; letter-spacing: .06em; color: var(--snow); font-variant-numeric: tabular-nums; }
+.stats b { text-align: right; line-height: 1.6; font-weight: 300; letter-spacing: .06em; color: var(--snow); font-variant-numeric: tabular-nums; }
 
 /* ── head-up display ─────────────────────────────────────────── */
 
@@ -1071,3 +1071,13 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .sb-slot-star:focus-visible { outline: 2px solid var(--snow); outline-offset: -2px; border-radius: 6px; }
 .sb-slot-star:hover { color: var(--snow); }
 .sb-slot-star.on { color: #f5c518; }
+
+/* ── end-of-case evaluation ───────────────────────────────────── */
+.eval { margin-top: 2vh; }
+.eval-profile { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .04em; color: var(--acc-bright); }
+.eval-text { margin: 6px 0 12px; font-size: 12.5px; line-height: 1.6; color: var(--dim); }
+.eval-row { display: flex; justify-content: space-between; gap: 16px; padding: 8px 2px; border-bottom: 1px solid var(--ghost); }
+.eval-row b { display: block; font-size: 12px; color: var(--snow); font-weight: 600; }
+.eval-row small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.4; color: var(--faint); }
+.eval-grade { text-align: right; flex-shrink: 0; max-width: 45%; }
+.eval-grade b { color: var(--acc-bright); }

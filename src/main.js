@@ -10,6 +10,7 @@ import { createBoard, worldToSquare } from './game/board.js';
 import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
 import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
+import { evaluate } from './game/evaluation.js';
 import { createHud } from './ui/hud.js';
 import { createMenu, loadSettings } from './ui/menu.js';
 import { createAudio } from './core/audio.js';
@@ -82,6 +83,8 @@ let elapsed = 0;
 const tiles = new Map();
 let currentSq = -1;
 let dugCount = 0, discardedCount = 0;
+// Every tile dealt this game, discarded ones included, for the end-of-case evaluation.
+let fullDeck = [];
 // Assignments are the only place evidence actually "moves" — Hold just
 // flags a tile as kept; the piece stays exactly where it was dealt.
 const assignments = { ethan: [], avery: [], olivia: [], noah: [] };
@@ -245,12 +248,8 @@ function doSubmit() {
 		resultEl.textContent = 'Answer both questions before you call it.';
 		return;
 	}
-	const results = QUESTIONS.map(q => accuseAnswers[q.key] === q.answer);
-	const allRight = results.every(Boolean);
-	resultEl.textContent = allRight
-		? '✓ CHECKMATE — Noah leaked it, Olivia altered it. Case closed.'
-		: `Not quite — ${results.filter(Boolean).length} / ${QUESTIONS.length} correct. The trail's still open.`;
-	audio[allRight ? 'solve' : 'fail']?.();
+	if (!playing) return;
+	endCase(QUESTIONS.every(q => accuseAnswers[q.key] === q.answer), 'submitted');
 }
 
 /**
@@ -446,7 +445,6 @@ const menu = createMenu({
 		else if (act === 'settings') menu.show('settings', { push: true });
 		else if (act === 'continue') menu.show('difficulty', { push: true });
 		else if (act === 'begin') { clearInterval(countdownTimer); beginTravel(); }
-		else if (act === 'retry') startGame();
 		else if (act === 'quit') toTitle();
 		else if (act === 'close') menu.show('title');
 	}
@@ -625,6 +623,7 @@ function startGame() {
 	const l = level();
 	const deck = buildDeck(s);
 	needed = deck.length;
+	fullDeck = deck;
 	dugCount = 0;
 	discardedCount = 0;
 	elapsed = 0;
@@ -656,23 +655,49 @@ function toTitle() {
 	menu.show('title');
 }
 
-function endCase(solved) {
+/**
+ * End the case and go straight to the results analysis. Called once, either when
+ * the final answers are submitted or when the clock runs out; there is no way
+ * back into the case from the result screen, only back to the title.
+ * @param {boolean} solved - True when both accusation answers were right.
+ * @param {'submitted'|'timeout'} reason - What ended the case.
+ * @returns {void}
+ */
+function endCase(solved, reason) {
+	if (!playing) return;
 	playing = false;
 	if (solved) audio.solve(); else audio.fail();
 
 	const titleEl = document.querySelector('[data-slot="result-title"]');
 	titleEl.textContent = solved ? 'CASE SOLVED' : 'CASE COLD';
 	titleEl.classList.toggle('cold', !solved);
-	menu.slot('result-over', solved
-		? 'The snow gives up its secret'
-		: 'The trail went cold · the snow covered the rest');
+	menu.slot('result-over', reason === 'timeout'
+		? 'Time ran out · the snow covered the rest'
+		: solved ? 'The snow gives up its secret' : 'Answers submitted · the trail went cold');
 
-	const l = level();
+	const report = evaluate({
+		questions: QUESTIONS,
+		answers: accuseAnswers,
+		assignments,
+		deck: fullDeck,
+		chosen: Object.values(assignments).flat().map(i => tiles.get(i.sq)).filter(Boolean),
+		elapsed,
+		limit: timerOn() ? level().time : null,
+		timedOut: reason === 'timeout'
+	});
+	document.querySelector('[data-slot="result-eval"]').innerHTML = `
+		<p class="eval-profile">${report.profile.title}</p>
+		<p class="eval-text">${report.profile.text}</p>
+		<div class="eval-measures">${report.measures.map(x => `
+			<div class="eval-row"><div><b>${x.name}</b><small>${x.question}</small></div><div class="eval-grade"><b>${x.label}</b><small>${x.note}</small></div></div>`).join('')}
+		</div>`;
+
+	const starred = [...tiles.values()].filter(t => t.starred).length;
+	const placed = Object.values(assignments).reduce((n, list) => n + list.length, 0);
 	document.querySelector('[data-slot="result-stats"]').innerHTML = [
-		['Case', story().name],
-		['Evidence dug', `${dugCount} / ${needed}`],
 		['Discarded', discardedCount],
-		['Time in the snow', fmt(elapsed)]
+		['Starred', `${starred} / ${MAX_STARS}`],
+		['Placed on suspects', placed]
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
 
 	setTimeout(() => {
@@ -781,7 +806,7 @@ stage.onUpdate((dt, time) => {
 		elapsed += dt;
 		if (timerOn()) {
 			timeLeft -= dt;
-			if (timeLeft <= 0) { endCase(false); return; }
+			if (timeLeft <= 0) { endCase(false, 'timeout'); return; }
 		}
 		timerPaint += dt;
 		if (timerPaint > 0.2) {
