@@ -173,6 +173,7 @@
 		<span class="hud-story" data-slot="hud-story">The Leak</span>
 		<span class="hud-diff" data-slot="hud-diff">Easy</span>
 		<span class="hud-clues" data-slot="hud-clues">Clues 0 / 3</span>
+		<div class="hud-stars" data-slot="hud-stars"></div>
 	</div>
 
 	<div class="hud-mid">
@@ -205,7 +206,10 @@
 		<div class="tile-card">
 			<div class="tile-head">
 				<span class="tile-kind" data-slot="tile-kind">Clue</span>
-				<span class="tile-sq" data-slot="tile-sq">D4</span>
+				<span class="tile-head-right">
+					<button class="tile-star" data-tool="star" aria-pressed="false" aria-label="Star this evidence"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg></button>
+					<span class="tile-sq" data-slot="tile-sq">D4</span>
+				</span>
 			</div>
 			<div class="tile-media" data-slot="tile-media" hidden></div>
 			<div class="tile-label" data-slot="tile-label">Access Log</div>

@@ -114,6 +114,19 @@ export function createHud({ onTool }) {
 			if (btn) btn.disabled = !on;
 		},
 
+		/**
+		 * Show whether the open card's evidence is starred.
+		 * @param {boolean} on - True when it is starred.
+		 * @returns {void}
+		 */
+		setStarred(on) {
+			const btn = document.querySelector('[data-tool="star"]');
+			if (!btn) return;
+			btn.classList.toggle('on', on);
+			btn.setAttribute('aria-pressed', String(on));
+			btn.setAttribute('aria-label', on ? 'Remove the star' : 'Star this evidence');
+		},
+
 		hideTile() {
 			const media = $('tile-media');
 			const video = media.querySelector('video');

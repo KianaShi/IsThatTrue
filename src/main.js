@@ -91,6 +91,7 @@ const hud = createHud({ onTool: tool => {
 	else if (tool === 'close-tile') closeTile();
 	else if (tool === 'dig') doDig();
 	else if (tool === 'hold') doHold();
+	else if (tool === 'star') doStar();
 	else if (tool === 'discard') doDiscard();
 	else if (tool === 'submit') doSubmit();
 	else if (tool === 'suspects') openSuspectboard();
@@ -135,6 +136,60 @@ function doDig() {
 	renderBasketBar();
 }
 
+// How many pieces the player may star as the evidence they think matters most.
+const MAX_STARS = 5;
+
+/**
+ * Toggle the star on the open card's evidence. A sixth star is refused with a
+ * note, so the player has to give one up first.
+ * @returns {void}
+ */
+function doStar() {
+	toggleStar(currentSq);
+}
+
+/**
+ * Star or unstar the evidence on a square, from its card or from the suspect
+ * board. Refuses a sixth star with a note.
+ * @param {number} sq - 0x88 board square of the evidence.
+ * @returns {boolean} True if the star state changed.
+ */
+function toggleStar(sq) {
+	const tile = tiles.get(sq);
+	if (!tile) return false;
+	if (!tile.starred && [...tiles.values()].filter(t => t.starred).length >= MAX_STARS) {
+		hud.toast(`You can star ${MAX_STARS} pieces. Remove a star first.`);
+		return false;
+	}
+	tile.starred = !tile.starred;
+	audio.confirm();
+	renderStars();
+	return true;
+}
+
+/**
+ * Redraw the starred list under the clue counter (name and an arrow that jumps
+ * to that card) and the star on the open card, if there is one.
+ * @returns {void}
+ */
+function renderStars() {
+	const starred = [...tiles.entries()].filter(([, t]) => t.starred);
+	document.querySelector('[data-slot="hud-stars"]').innerHTML = starred.length
+		? `<span class="hud-stars-count">Starred ${starred.length}/${MAX_STARS}</span>` + starred.map(([sq, t]) =>
+			`<button type="button" class="hud-star-item" data-star-open="${sq}"><span class="hud-star-name">${t.label}</span><span class="arr" aria-hidden="true">›</span></button>`).join('')
+		: '';
+	const open = tiles.get(currentSq);
+	if (hud.tileOpen && open) hud.setStarred(!!open.starred);
+}
+
+document.querySelector('[data-slot="hud-stars"]').addEventListener('click', event => {
+	const item = event.target.closest('[data-star-open]');
+	if (!item || !playing) return;
+	const sq = Number(item.dataset.starOpen);
+	const tile = tiles.get(sq);
+	if (tile) revealTile(sq, tile);
+});
+
 // How many held-but-unplaced pieces the basket can carry at once.
 const BASKET_SIZE = 4;
 
@@ -159,6 +214,7 @@ function doDiscard() {
 	if (!tile) return;
 	if (tile.placedTo) assignments[tile.placedTo] = assignments[tile.placedTo].filter(i => i.sq !== currentSq);
 	tiles.delete(currentSq);
+	renderStars();
 	discardedCount++;
 	evidencePieces.hide(currentSq);
 	audio.deny();
@@ -267,10 +323,13 @@ let sbBasketOpen = false;
  * @returns {string} HTML for the tile.
  */
 function pieceTile(sq, t, attr, badge = '') {
-	return `<button type="button" class="sb-slot filled" ${attr}>
-		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
-		<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
-	</button>`;
+	return `<div class="sb-cell">
+		<button type="button" class="sb-slot filled" ${attr}>
+			<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
+			<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
+		</button>
+		<button type="button" class="sb-slot-star${t.starred ? ' on' : ''}" data-star-toggle="${sq}" aria-pressed="${!!t.starred}" aria-label="${t.starred ? 'Remove the star' : 'Star this evidence'}">${t.starred ? '★' : '☆'}</button>
+	</div>`;
 }
 
 /**
@@ -350,6 +409,8 @@ function renderCaseboard() {
 }
 
 document.querySelector('[data-slot="suspectboard"]').addEventListener('click', event => {
+	const star = event.target.closest('[data-star-toggle]');
+	if (star) { toggleStar(Number(star.dataset.starToggle)); renderCaseboard(); return; }
 	const nav = event.target.closest('[data-sb]');
 	if (nav) {
 		const act = nav.dataset.sb;
@@ -538,6 +599,7 @@ function dealTiles(deck) {
 		tile.side = 'ivory';
 		tile.held = false;
 		tile.placedTo = null;
+		tile.starred = false;
 		tiles.set(sq, tile);
 		evidencePieces.spawn(sq);
 	});
@@ -568,6 +630,7 @@ function startGame() {
 	elapsed = 0;
 	timeLeft = l.time;
 	dealTiles(deck);
+	renderStars();
 	playing = true;
 	menu.hide();
 	hud.show();
@@ -653,6 +716,7 @@ const squareName = sq => 'ABCDEFGH'[sq & 15] + ((sq >> 4) + 1);
 function revealTile(sq, tile) {
 	currentSq = sq;
 	hud.showTile(tile, squareName(sq));
+	hud.setStarred(!!tile.starred);
 	// Reopening a piece shows everything already dug out of it.
 	for (let l = 0; l < tile.dugLevel; l++) hud.revealDig(tile.digLevels[l]);
 	hud.setDigEnabled(tile.dugLevel < Math.min((tile.digLevels || []).length, MAX_TIER));
