@@ -10,6 +10,7 @@ import { createBoard, worldToSquare } from './game/board.js';
 import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
 import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
+import { evaluate } from './game/evaluation.js';
 import { createHud } from './ui/hud.js';
 import { createMenu, loadSettings } from './ui/menu.js';
 import { createAudio } from './core/audio.js';
@@ -82,6 +83,8 @@ let elapsed = 0;
 const tiles = new Map();
 let currentSq = -1;
 let dugCount = 0, discardedCount = 0;
+// Every tile dealt this game, discarded ones included, for the end-of-case evaluation.
+let fullDeck = [];
 // Assignments are the only place evidence actually "moves" — Hold just
 // flags a tile as kept; the piece stays exactly where it was dealt.
 const assignments = { ethan: [], avery: [], olivia: [], noah: [] };
@@ -191,10 +194,8 @@ function doSubmit() {
 	}
 	const results = QUESTIONS.map(q => accuseAnswers[q.key] === q.answer);
 	const allRight = results.every(Boolean);
-	resultEl.textContent = allRight
-		? '✓ CHECKMATE — Noah leaked it, Olivia altered it. Case closed.'
-		: `Not quite — ${results.filter(Boolean).length} / ${QUESTIONS.length} correct. The trail's still open.`;
-	audio[allRight ? 'solve' : 'fail']?.();
+	resultEl.textContent = '';
+	endCase(allRight);
 }
 
 /**
@@ -563,6 +564,7 @@ function startGame() {
 	const l = level();
 	const deck = buildDeck(s);
 	needed = deck.length;
+	fullDeck = deck;
 	dugCount = 0;
 	discardedCount = 0;
 	elapsed = 0;
@@ -593,8 +595,31 @@ function toTitle() {
 	menu.show('title');
 }
 
-function endCase(solved) {
+/**
+ * Finish the case: score the run, fill the result screen and show it.
+ * @param {boolean} solved - True if every accusation answer was right.
+ * @param {boolean} [timedOut] - True if the clock ran out first.
+ * @returns {void}
+ */
+function endCase(solved, timedOut = false) {
+	if (!playing) return;
 	playing = false;
+	const report = evaluate({
+		questions: QUESTIONS,
+		answers: accuseAnswers,
+		assignments,
+		deck: fullDeck,
+		chosen: Object.values(assignments).flat().map(i => tiles.get(i.sq)).filter(Boolean),
+		elapsed,
+		limit: timerOn() ? level().time : null,
+		timedOut
+	});
+	document.querySelector('[data-slot="result-eval"]').innerHTML = `
+		<p class="eval-profile">${report.profile.title}</p>
+		<p class="eval-text">${report.profile.text}</p>
+		<div class="eval-measures">${report.measures.map(m => `
+			<div class="eval-row"><div><b>${m.name}</b><small>${m.question}</small></div><div class="eval-grade"><b>${m.label}</b><small>${m.note}</small></div></div>`).join('')}
+		</div>`;
 	if (solved) audio.solve(); else audio.fail();
 
 	const titleEl = document.querySelector('[data-slot="result-title"]');
@@ -717,7 +742,7 @@ stage.onUpdate((dt, time) => {
 		elapsed += dt;
 		if (timerOn()) {
 			timeLeft -= dt;
-			if (timeLeft <= 0) { endCase(false); return; }
+			if (timeLeft <= 0) { endCase(false, true); return; }
 		}
 		timerPaint += dt;
 		if (timerPaint > 0.2) {
