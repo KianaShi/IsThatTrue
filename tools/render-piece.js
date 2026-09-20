@@ -10,11 +10,13 @@ const SIZE = 1024;          // exported square size in px
 const WEB_SIZE = 256;       // small copies the game UI actually loads (assets/chess/web/)
 const rotationX = 14;       // tilt toward the camera, degrees (shows a bit of the top)
 const rotationY = 32;       // turn around the vertical axis, degrees (the 3/4 view)
-const rotationZ = 6;        // small lean, degrees
+const rotationZ = -16;      // lean in the picture plane, degrees: negative leans the top to the upper right
 const cameraZoom = 1;       // >1 zooms in (piece fills more of the canvas)
 const modelScale = 1;       // scale of the model; only matters when AUTO_FIT is false
 const lightIntensity = 1;   // multiplies every light and the environment
-const FILL = 0.76;          // fraction of the canvas the piece occupies when AUTO_FIT is on
+// Fraction of the canvas each piece fills when AUTO_FIT is on. It grows with the upgrade
+// so a fully dug king reads bigger than a pawn; the tall, thin king needs the most.
+const FILL = { pawn: 0.70, knight: 0.76, bishop: 0.84, king: 0.94 };
 const AUTO_FIT = true;      // centre the piece and size the camera to hit FILL
 
 const q = new URLSearchParams(location.search);
@@ -96,9 +98,12 @@ function draw(piece, side, variant) {
 	mesh = new THREE.Mesh(pieceGeometries()[tier.type], mat);
 	// The game stretches some tiers taller; keep the icon the same shape as the board piece.
 	mesh.scale.set(CFG.scale, CFG.scale * (tier.stretch || 1), CFG.scale);
-	// The knight model faces -z (away from this camera), so turn it to face the viewer.
-	const yaw = CFG.ry + (piece === 'knight' ? 180 : 0);
-	mesh.rotation.set(rad(CFG.rx), rad(yaw), rad(CFG.rz), 'XYZ');
+	// The knight model faces -z, away from this camera. Turning it 120 degrees (on top of
+	// rotationY) brings the head round to a 3/4 view facing the viewer's left.
+	const yaw = CFG.ry + (piece === 'knight' ? 120 : 0);
+	// 'ZXY': turn about Y first, then tilt about X, then roll in the picture plane,
+	// so rotationZ always leans toward the same screen corner whatever the turn.
+	mesh.rotation.set(rad(CFG.rx), rad(yaw), rad(CFG.rz), 'ZXY');
 	mesh.position.set(0, 0, 0);
 	scene.add(mesh);
 	mesh.updateMatrixWorld(true);
@@ -108,7 +113,7 @@ function draw(piece, side, variant) {
 		const box = new THREE.Box3().setFromObject(mesh, true);
 		const size = box.getSize(new THREE.Vector3());
 		mesh.position.sub(box.getCenter(new THREE.Vector3()));
-		half = Math.max(size.x, size.y) / 2 / FILL / CFG.zoom;
+		half = Math.max(size.x, size.y) / 2 / FILL[piece] / CFG.zoom;
 	}
 	camera.left = -half; camera.right = half; camera.top = half; camera.bottom = -half;
 	camera.updateProjectionMatrix();

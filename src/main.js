@@ -261,9 +261,28 @@ let sbBasketOpen = false;
  */
 function pieceTile(sq, t, attr, badge = '') {
 	return `<button type="button" class="sb-slot filled" ${attr}>
-		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
-		<span class="sb-slot-label">${t.label}</span>${badge}
+		<span class="pc"><img class="t${t.dugLevel}" src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
+		<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
 	</button>`;
+}
+
+/**
+ * Keep every suspect-board label on one line. A label that fits is left alone;
+ * one that overflows gets the `marquee` class and the distance it has to slide,
+ * so long evidence names scroll left and right instead of wrapping or clipping.
+ * Must run after layout, so callers schedule it with requestAnimationFrame.
+ * @returns {void}
+ */
+function fitLabels() {
+	document.querySelectorAll('.sb-slot-label').forEach(el => {
+		const text = el.firstElementChild;
+		const overflow = text ? Math.ceil(text.scrollWidth - el.clientWidth) : 0;
+		el.classList.toggle('marquee', overflow > 1);
+		if (overflow > 1) {
+			el.style.setProperty('--shift', `-${overflow + 2}px`);
+			el.style.setProperty('--dur', `${Math.max(3, overflow / 22 + 2.5).toFixed(1)}s`);
+		}
+	});
 }
 
 /**
@@ -317,6 +336,7 @@ function renderCaseboard() {
 	document.querySelector('[data-slot="cb-basket"]').innerHTML = held.length
 		? held.map(([sq, t]) => pieceTile(sq, t, `data-place="${sq}" ${full ? 'disabled' : ''}`)).join('')
 		: '<p class="cb-empty">Nothing held yet. Add evidence to the basket from the board.</p>';
+	requestAnimationFrame(fitLabels);
 }
 
 document.querySelector('[data-slot="suspectboard"]').addEventListener('click', event => {

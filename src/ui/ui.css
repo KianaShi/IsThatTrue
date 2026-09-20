@@ -823,8 +823,9 @@ body.playing #hud { opacity: 1; }
 .sb-suspect .cb-sname { display: block; margin-top: 8px; font-size: 15px; color: var(--acc-bright); }
 .sb-role { margin: 2px 0 16px; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
 
-.sb-slots, .sb-heldlist { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sb-slots, .sb-heldlist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .sb-slot {
+	min-width: 0;
 	aspect-ratio: 1;
 	border: 1px dashed var(--ghost);
 	border-radius: 10px;
@@ -842,10 +843,28 @@ button.sb-slot.filled {
 }
 button.sb-slot.filled:hover { border-color: var(--acc-bright); background: #5c0d11; }
 .sb-slot .pc { flex: 1; display: flex; align-items: center; }
-.sb-slot .pc img { display: block; width: clamp(46px, 15vw, 78px); height: auto; pointer-events: none; }
+/* Icons grow with the upgrade (pawn smallest, king largest); the empty margin
+   inside each PNG lets the bigger ones overlap the tile padding without clipping. */
+.sb-slot .pc img { display: block; width: clamp(44px, 14vw, 62px); height: auto; margin: -4px 0; pointer-events: none; }
+.sb-slot .pc img.t1 { width: clamp(50px, 16vw, 70px); }
+.sb-slot .pc img.t2 { width: clamp(56px, 18vw, 78px); }
+.sb-slot .pc img.t3 { width: clamp(64px, 21vw, 90px); margin: -10px 0; }
+/* One line always. Text that fits is centred; text that doesn't slides back and
+   forth so the whole name can be read (see fitLabels in main.js). */
 .sb-slot-label {
-	width: 100%; font-size: 9.5px; line-height: 1.25;
-	display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+	position: relative; z-index: 1;
+	width: 100%; font-size: 9.5px; line-height: 1.4;
+	white-space: nowrap; overflow: hidden; text-align: center;
+}
+.sb-slot-label .lbl { display: inline-block; }
+.sb-slot-label.marquee .lbl { animation: labelSlide var(--dur, 6s) ease-in-out infinite alternate; }
+@keyframes labelSlide {
+	0%, 18% { transform: translateX(0); }
+	82%, 100% { transform: translateX(var(--shift)); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.sb-slot-label.marquee { text-overflow: ellipsis; }
+	.sb-slot-label.marquee .lbl { animation: none; }
 }
 .sb-slot-x {
 	position: absolute; top: 4px; right: 4px;
