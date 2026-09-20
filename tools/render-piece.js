@@ -14,9 +14,9 @@ const rotationZ = -16;      // lean in the picture plane, degrees: negative lean
 const cameraZoom = 1;       // >1 zooms in (piece fills more of the canvas)
 const modelScale = 1;       // scale of the model; only matters when AUTO_FIT is false
 const lightIntensity = 1;   // multiplies every light and the environment
-// Fraction of the canvas each piece fills when AUTO_FIT is on. It grows with the upgrade
-// so a fully dug king reads bigger than a pawn; the tall, thin king needs the most.
-const FILL = { pawn: 0.70, knight: 0.76, bishop: 0.84, king: 0.94 };
+// Fraction of the canvas each piece fills when AUTO_FIT is on. The king is the reference and the
+// others are only a little smaller, roughly the way real chess sets step down in height.
+const FILL = { pawn: 0.80, knight: 0.86, bishop: 0.90, king: 0.94 };
 const AUTO_FIT = true;      // centre the piece and size the camera to hit FILL
 
 const q = new URLSearchParams(location.search);

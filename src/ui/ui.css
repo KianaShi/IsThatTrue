@@ -843,14 +843,10 @@ button.sb-slot.filled {
 }
 button.sb-slot.filled:hover { border-color: var(--acc-bright); background: #5c0d11; }
 .sb-slot .pc { flex: 1; display: flex; align-items: center; }
-/* Icons grow with the upgrade (pawn smallest, king largest); the empty margin
-   inside each PNG lets the bigger ones overlap the tile padding without clipping. */
-.sb-slot .pc img { display: block; width: clamp(44px, 14vw, 62px); height: auto; margin: -4px 0; pointer-events: none; }
-.sb-slot .pc img.t1 { width: clamp(50px, 16vw, 70px); }
-.sb-slot .pc img.t2 { width: clamp(56px, 18vw, 78px); }
-.sb-slot .pc img.t3 { width: clamp(64px, 21vw, 90px); margin: -10px 0; }
-/* One line always. Text that fits is centred; text that doesn't slides back and
-   forth so the whole name can be read (see fitLabels in main.js). */
+/* One size for every tier: the rendered pieces already step down gently from the king,
+   so the icons keep their real proportions instead of being resized per tier. */
+.sb-slot .pc img { display: block; width: clamp(54px, 18vw, 82px); height: auto; margin: -6px 0; pointer-events: none; }
+
 .sb-slot-label {
 	position: relative; z-index: 1;
 	width: 100%; font-size: 9.5px; line-height: 1.4;

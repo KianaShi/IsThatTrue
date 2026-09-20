@@ -261,7 +261,7 @@ let sbBasketOpen = false;
  */
 function pieceTile(sq, t, attr, badge = '') {
 	return `<button type="button" class="sb-slot filled" ${attr}>
-		<span class="pc"><img class="t${t.dugLevel}" src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
+		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
 		<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
 	</button>`;
 }
