@@ -9,7 +9,7 @@ export const QUALITY = {
 };
 
 const VIEWS = {
-	seat: { radius: 26, polar: 0.95, yaw: 0.30, label: 'Survey' },
+	seat: { radius: 17, polar: 0.95, yaw: 0.30, label: 'Survey' },
 	high: { radius: 19, polar: 0.68, yaw: 0.16, label: 'High' },
 	over: { radius: 15, polar: 0.16, yaw: 0, label: 'Overhead' }
 };
@@ -47,6 +47,8 @@ export function createStage(canvas, quality = 'high') {
 	controls.rotateSpeed = 0.62;
 	controls.zoomSpeed = 0.7;
 	controls.enablePan = false;
+	// The play view is framed on purpose; scroll/pinch shouldn't drift it.
+	controls.enableZoom = false;
 	controls.minDistance = 6.4;
 	controls.maxDistance = 32;
 	controls.minPolarAngle = 0.1;

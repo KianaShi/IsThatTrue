@@ -94,7 +94,8 @@ export function createHud({ onTool }) {
 			const p = document.createElement('p');
 			p.className = 'tile-text tile-dig-reveal';
 			p.textContent = text;
-			$('tile-text').after(p);
+			const shown = document.querySelectorAll('.tile-dig-reveal');
+			(shown.length ? shown[shown.length - 1] : $('tile-text')).after(p);
 		},
 
 		setDigEnabled(on) {

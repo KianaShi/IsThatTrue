@@ -1,12 +1,20 @@
 import * as THREE from 'three';
-import { PAWN, KNIGHT } from '../chess/engine.js';
+import { PAWN, KNIGHT, BISHOP, ROOK } from '../chess/engine.js';
 import { pieceGeometries } from './pieces.js';
 import { pieceMaterial } from './materials.js';
 import { squareToWorld } from './board.js';
 
 // Piece layer for the evidence board: one ivory pawn per dealt square.
-// Digging in is a real upgrade — the pawn becomes a knight, cut in obsidian
-// instead of bone, not just a recolour of the same shape.
+// Each Dig In is a real upgrade — pawn, then knight, bishop, rook — and each
+// step is cut in obsidian instead of bone and stands a little bigger than the
+// last, so how far a piece has been dug reads at a glance.
+const TIERS = [
+	{ type: PAWN, scale: 1 },
+	{ type: KNIGHT, scale: 1.25 },
+	{ type: BISHOP, scale: 1.4 },
+	{ type: ROOK, scale: 1.55 }
+];
+export const MAX_TIER = TIERS.length - 1;
 
 export function createEvidencePieces(scene) {
 	const group = new THREE.Group();
@@ -26,13 +34,18 @@ export function createEvidencePieces(scene) {
 		return mesh;
 	}
 
-	// Pawn -> knight, ivory -> obsidian. A real change of piece, not a tint.
-	function upgrade(sq) {
+	// Move a piece up to the given tier: new shape, obsidian, and larger.
+	function upgrade(sq, tier) {
 		const mesh = bySquare.get(sq);
 		if (!mesh) return;
-		mesh.geometry = geometries[KNIGHT];
-		mesh.material.dispose();
-		mesh.material = pieceMaterial('obsidian');
+		const t = TIERS[Math.min(Math.max(tier, 0), MAX_TIER)];
+		mesh.geometry = geometries[t.type];
+		mesh.scale.setScalar(t.scale);
+		if (tier > 0 && !mesh.userData.obsidian) {
+			mesh.material.dispose();
+			mesh.material = pieceMaterial('obsidian');
+			mesh.userData.obsidian = true;
+		}
 	}
 
 	function tint(sq, color) {

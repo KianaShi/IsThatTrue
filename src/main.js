@@ -7,7 +7,7 @@ import { createForest } from './world/forest.js';
 import { createSnowfall } from './world/snowfall.js';
 import { createProps } from './world/props.js';
 import { createBoard, worldToSquare } from './game/board.js';
-import { createEvidencePieces } from './game/evidencePieces.js';
+import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
 import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
 import { createHud } from './ui/hud.js';
@@ -101,16 +101,24 @@ const hud = createHud({ onTool: tool => {
 
 // ── evidence actions ────────────────────────────────────────────
 
+// Each Dig In reveals the next level of detail and moves the piece up a tier
+// (pawn, knight, bishop, rook). `dugLevel` is how many levels are open.
+const TIER_GLYPH = ['♟', '♞', '♝', '♜'];
+
 function doDig() {
 	const tile = tiles.get(currentSq);
-	if (!tile || tile.dug) return;
-	tile.dug = true;
-	dugCount++;
-	hud.revealDig(tile.digText || 'Nothing further surfaces.');
-	hud.setDigEnabled(false);
-	hud.setClues(dugCount, needed);
-	evidencePieces.upgrade(currentSq);
+	if (!tile) return;
+	const levels = tile.digLevels || [];
+	const max = Math.min(levels.length, MAX_TIER);
+	if (tile.dugLevel >= max) return;
+	if (tile.dugLevel === 0) { dugCount++; hud.setClues(dugCount, needed); }
+	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
+	tile.dugLevel++;
+	hud.setDigEnabled(tile.dugLevel < max);
+	evidencePieces.upgrade(currentSq, tile.dugLevel);
+	if (tile.held) evidencePieces.tint(currentSq, 0x9fd2ff);
 	audio.clue();
+	renderBasketBar();
 }
 
 // Hold: the piece stays exactly where it is on the board. It just gets
@@ -219,7 +227,7 @@ function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
 	slots.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="basket-chip"><span class="glyph">${t.dug ? '♞' : '♟'}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
+		<div class="basket-chip"><span class="glyph">${TIER_GLYPH[t.dugLevel]}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
 		: '<span class="basketbar-empty">Add evidence to fill it.</span>';
 }
 
@@ -421,7 +429,7 @@ function dealTiles(deck) {
 			sq = row * 16 + (i % 8);
 		}
 		tile.revealed = false;
-		tile.dug = false;
+		tile.dugLevel = 0;
 		tile.held = false;
 		tile.placedTo = null;
 		tiles.set(sq, tile);
@@ -533,7 +541,9 @@ const squareName = sq => 'ABCDEFGH'[sq & 15] + ((sq >> 4) + 1);
 function revealTile(sq, tile) {
 	currentSq = sq;
 	hud.showTile(tile, squareName(sq));
-	hud.setDigEnabled(!tile.dug);
+	// Reopening a piece shows everything already dug out of it.
+	for (let l = 0; l < tile.dugLevel; l++) hud.revealDig(tile.digLevels[l]);
+	hud.setDigEnabled(tile.dugLevel < Math.min((tile.digLevels || []).length, MAX_TIER));
 	audio.confirm();
 }
 
