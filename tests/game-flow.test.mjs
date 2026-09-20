@@ -11,7 +11,7 @@ test('actual endCase handles timeout once, retains discarded evidence, closes ov
  document:{querySelector(key){if(!elements.has(key))elements.set(key,{classList:{toggle(){}},setAttribute(){},focus(){},hidden:false});return elements.get(key);}},
  menu:{slot(k,v){calls.push(v);},show(s){calls.push(s);}},
  tiles:new Map([[1,{id:'A1',held:true}]]),discardedTiles:new Map([[2,{id:'B1',discarded:true}]]),
- QUESTIONS:[],accuseAnswers:{},STORIES:{s1:caseData},story:()=>caseData,elapsed:300,level:()=>({time:300}),timerOn:()=>true,
+ QUESTIONS:[],accuseAnswers:{},STORIES:{s1:caseData},story:()=>caseData,elapsed:300,LEVEL:{time:300},timerOn:()=>true,
  renderCaseReport(_host,run){calls.push(run);},fmt:String,dugCount:1,needed:32,
  hud:{hide(){calls.push('hide');},hideTile(){calls.push('hideTile');}},board:{clearMarks(){}},evidencePieces:{reset(){}},stage:{setAttract(){}},
  };
