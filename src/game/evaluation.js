@@ -2,7 +2,6 @@
 // the result onto a candidate profile. Pure functions, no DOM, so the rules
 // live in one place. Shown only after the case ends, never during play.
 
-const RELEVANT = new Set(['critical', 'high']);
 const STRONG = 0.6;
 
 /**
@@ -18,37 +17,38 @@ export function scoreOutcome(questions, answers) {
 }
 
 /**
- * Evidence Selection Quality: of the evidence the player put on the board,
- * how much was truly relevant (precision), and how much of the relevant
- * evidence did they find (recall)? The score is the average of the two.
- * @param {Array<object>} chosen - Deck tiles the player placed under a suspect.
+ * Evidence Selection: how much of the evidence was matched. A piece matches when
+ * the player put it in a slot under the suspect it is about. The score averages
+ * how many of the placed pieces matched (precision) with how much of the board
+ * that could be matched was covered (recall, capped by the number of slots).
+ * @param {Array<{tile: object, suspect: string}>} placed - Every piece under a suspect, with that suspect's key.
  * @param {Array<object>} deck - The full deck.
+ * @param {number} slots - Total slots across all suspects.
  * @returns {{score: number, strong: boolean, note: string}}
  */
-export function scoreSelection(chosen, deck) {
-	const totalRelevant = deck.filter(t => RELEVANT.has(t.relevance)).length;
-	const hits = chosen.filter(t => RELEVANT.has(t.relevance)).length;
-	const precision = chosen.length ? hits / chosen.length : 0;
-	const recall = totalRelevant ? hits / totalRelevant : 0;
+export function scoreSelection(placed, deck, slots) {
+	const matchable = Math.min(slots, deck.filter(t => t.aboutSuspect).length);
+	const matched = placed.filter(p => p.tile.aboutSuspect === p.suspect).length;
+	const precision = placed.length ? matched / placed.length : 0;
+	const recall = matchable ? matched / matchable : 0;
 	const score = (precision + recall) / 2;
-	return { score, strong: score >= STRONG, note: `${hits} of ${chosen.length} chosen were relevant · ${hits} of ${totalRelevant} relevant found` };
+	return { score, strong: score >= STRONG, note: `${matched} of ${placed.length} placed sat under the right suspect · ${matched} of ${matchable} slots matched` };
 }
 
 /**
- * Reasoning Coherence: given the evidence the player placed, does their
- * conclusion follow from it? Each accused suspect is compared with the
- * suspect who carries the most placed evidence.
+ * Reasoning Coherence: do the starred pieces point at the suspects the player
+ * named in their answers? Each starred piece counts when it is about one of the
+ * answered suspects, so a wrong answer can still be coherent with what was starred.
  * @param {Array<{key: string}>} questions - The accusation questions.
  * @param {Object<string, string|null>} answers - The player's answer per question key.
- * @param {Object<string, Array>} assignments - Placed evidence per suspect key.
+ * @param {Array<object>} starred - The deck tiles the player starred.
  * @returns {{score: number, strong: boolean, note: string}}
  */
-export function scoreReasoning(questions, answers, assignments) {
-	const counts = Object.fromEntries(Object.entries(assignments).map(([k, v]) => [k, v.length]));
-	const most = Math.max(0, ...Object.values(counts));
-	const per = questions.map(q => (most && answers[q.key] ? (counts[answers[q.key]] || 0) / most : 0));
-	const score = per.reduce((a, b) => a + b, 0) / questions.length;
-	return { score, strong: score >= STRONG, note: most ? 'How well your answers match where you placed evidence' : 'No evidence was placed to reason from' };
+export function scoreReasoning(questions, answers, starred) {
+	const named = new Set(questions.map(q => answers[q.key]).filter(Boolean));
+	const linked = starred.filter(t => named.has(t.aboutSuspect)).length;
+	const score = starred.length ? linked / starred.length : 0;
+	return { score, strong: score >= STRONG, note: starred.length ? `${linked} of ${starred.length} starred point to the suspects you named` : 'Nothing was starred' };
 }
 
 /**
@@ -77,33 +77,35 @@ const PROFILES = {
 };
 
 /**
- * Score a finished run and pick its candidate profile.
+ * Score a finished run and pick its candidate profile. The overall percentage is
+ * the mean of three scores: answers correct, evidence matched to the right
+ * suspect, and starred evidence that points at the suspects named.
  * @param {object} run
  * @param {Array} run.questions - Accusation questions.
  * @param {object} run.answers - Answers by question key.
- * @param {object} run.assignments - Placed evidence per suspect.
+ * @param {Array<{tile: object, suspect: string}>} run.placed - Every piece under a suspect, with that suspect's key.
+ * @param {Array<object>} run.starred - The deck tiles the player starred.
  * @param {Array} run.deck - Every deck tile.
- * @param {Array} run.chosen - Deck tiles the player placed.
+ * @param {number} run.slots - Total slots across all suspects.
  * @param {number} run.elapsed - Seconds spent.
  * @param {number|null} run.limit - Time limit, null if untimed.
  * @param {boolean} run.timedOut - Whether the clock ran out.
- * @returns {{accuracy: {right: number, total: number, percent: number}, measures: Array<{name: string, label: string, note: string}>, profile: {title: string, text: string}}}
+ * @returns {{overall: number, measures: Array<{name: string, label: string, note: string}>, profile: {title: string, text: string}}}
  */
-export function evaluate({ questions, answers, assignments, deck, chosen, elapsed, limit, timedOut }) {
+export function evaluate({ questions, answers, placed, starred, deck, slots, elapsed, limit, timedOut }) {
 	const outcome = scoreOutcome(questions, answers);
-	const selection = scoreSelection(chosen, deck);
-	const reasoning = scoreReasoning(questions, answers, assignments);
+	const selection = scoreSelection(placed, deck, slots);
+	const reasoning = scoreReasoning(questions, answers, starred);
 	const time = scoreTime(elapsed, limit, timedOut);
 	const [title, text] = PROFILES[`${+outcome.correct}-${+selection.strong}-${+reasoning.strong}`];
-	/** @param {{strong: boolean}} s - A scored measure. @returns {'Strong'|'Weak'} Its display grade. */
-	const grade = s => (s.strong ? 'Strong' : 'Weak');
-	const right = questions.filter(q => answers[q.key] === q.answer).length;
+	/** @param {{score: number}} s - A scored measure. @returns {string} Its score as a percentage. */
+	const pct = s => `${Math.round(s.score * 100)}%`;
 	return {
-		accuracy: { right, total: questions.length, percent: Math.round(outcome.score * 100) },
+		overall: Math.round((outcome.score + selection.score + reasoning.score) / 3 * 100),
 		measures: [
-			{ name: 'Outcome Accuracy', label: `${Math.round(outcome.score * 100)}%`, note: outcome.note },
-			{ name: 'Evidence Selection', label: grade(selection), note: selection.note },
-			{ name: 'Reasoning Coherence', label: grade(reasoning), note: reasoning.note },
+			{ name: 'Outcome Accuracy', label: pct(outcome), note: outcome.note },
+			{ name: 'Evidence Selection', label: pct(selection), note: selection.note },
+			{ name: 'Reasoning Coherence', label: pct(reasoning), note: reasoning.note },
 			{ name: 'Time', label: time.label, note: time.note }
 		],
 		profile: { title, text }

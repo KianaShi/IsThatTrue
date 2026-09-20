@@ -692,23 +692,24 @@ function endCase(solved, reason) {
 	const report = evaluate({
 		questions: QUESTIONS,
 		answers: accuseAnswers,
-		assignments,
+		placed: Object.entries(assignments)
+			.flatMap(([suspect, list]) => list.map(i => ({ tile: tiles.get(i.sq), suspect })))
+			.filter(p => p.tile),
+		starred: [...tiles.values()].filter(t => t.starred),
 		deck: fullDeck,
-		chosen: Object.values(assignments).flat().map(i => tiles.get(i.sq)).filter(Boolean),
+		slots: SUSPECTS.length * SLOTS_PER_SUSPECT,
 		elapsed,
 		limit: timerOn() ? level().time : null,
 		timedOut: reason === 'timeout'
 	});
-	const { right, total, percent } = report.accuracy;
 	const RING = 2 * Math.PI * 52;
 	document.querySelector('[data-slot="result-eval"]').innerHTML = `
-		<p class="eval-profile">${report.profile.title}</p>
 		<div class="eval-ring">
 			<svg viewBox="0 0 120 120" aria-hidden="true">
 				<circle class="eval-ring-track" cx="60" cy="60" r="52"/>
-				<circle class="eval-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="${RING.toFixed(1)}" stroke-dashoffset="${(RING * (1 - percent / 100)).toFixed(1)}"/>
+				<circle class="eval-ring-fill" cx="60" cy="60" r="52" stroke-dasharray="${RING.toFixed(1)}" stroke-dashoffset="${(RING * (1 - report.overall / 100)).toFixed(1)}"/>
 			</svg>
-			<div class="eval-ring-label"><b>${percent}%</b><small>${right} of ${total} correct</small></div>
+			<div class="eval-ring-label"><b>${report.overall}%</b><small>Overall</small></div>
 		</div>
 		<div class="eval-measures">${report.measures.map(x => `
 			<div class="eval-row"><b>${x.name}</b><div class="eval-grade"><b>${x.label}</b><small>${x.note}</small></div></div>`).join('')}
