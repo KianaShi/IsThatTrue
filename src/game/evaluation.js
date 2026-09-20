@@ -87,7 +87,7 @@ const PROFILES = {
  * @param {number} run.elapsed - Seconds spent.
  * @param {number|null} run.limit - Time limit, null if untimed.
  * @param {boolean} run.timedOut - Whether the clock ran out.
- * @returns {{measures: Array<{name: string, question: string, label: string, note: string}>, profile: {title: string, text: string}}}
+ * @returns {{accuracy: {right: number, total: number, percent: number}, measures: Array<{name: string, question: string, label: string, note: string}>, profile: {title: string, text: string}}}
  */
 export function evaluate({ questions, answers, assignments, deck, chosen, elapsed, limit, timedOut }) {
 	const outcome = scoreOutcome(questions, answers);
@@ -95,8 +95,11 @@ export function evaluate({ questions, answers, assignments, deck, chosen, elapse
 	const reasoning = scoreReasoning(questions, answers, assignments);
 	const time = scoreTime(elapsed, limit, timedOut);
 	const [title, text] = PROFILES[`${+outcome.correct}-${+selection.strong}-${+reasoning.strong}`];
+	/** @param {{strong: boolean}} s - A scored measure. @returns {'Strong'|'Weak'} Its display grade. */
 	const grade = s => (s.strong ? 'Strong' : 'Weak');
+	const right = questions.filter(q => answers[q.key] === q.answer).length;
 	return {
+		accuracy: { right, total: questions.length, percent: Math.round(outcome.score * 100) },
 		measures: [
 			{ name: 'Outcome Accuracy', question: 'Did they reach the correct conclusion?', label: outcome.correct ? 'Correct' : 'Incorrect', note: outcome.note },
 			{ name: 'Evidence Selection', question: 'Did they identify the truly relevant information?', label: grade(selection), note: selection.note },

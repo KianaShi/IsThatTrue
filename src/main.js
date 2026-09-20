@@ -186,6 +186,12 @@ function unassign(key, sq) {
 	renderCaseboard();
 }
 
+/**
+ * Submit the accusation: once every question has an answer, end the case and
+ * show the result and evaluation. With any question unanswered it only shows
+ * a reminder and the case carries on.
+ * @returns {void}
+ */
 function doSubmit() {
 	const resultEl = document.querySelector('[data-slot="cb-result"]');
 	if (QUESTIONS.some(q => !accuseAnswers[q.key])) {
@@ -632,6 +638,7 @@ function endCase(solved, timedOut = false) {
 	const l = level();
 	document.querySelector('[data-slot="result-stats"]').innerHTML = [
 		['Case', story().name],
+		['Accuracy', `${report.accuracy.right} / ${report.accuracy.total} correct · ${report.accuracy.percent}%`],
 		['Evidence dug', `${dugCount} / ${needed}`],
 		['Discarded', discardedCount],
 		['Time in the snow', fmt(elapsed)]
