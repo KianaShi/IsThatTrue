@@ -116,7 +116,6 @@ function doDig() {
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
 	evidencePieces.upgrade(currentSq, tile.dugLevel);
-	if (tile.held) evidencePieces.tint(currentSq, 0x9fd2ff);
 	audio.clue();
 	renderBasketBar();
 }
@@ -128,7 +127,6 @@ function doHold() {
 	const tile = tiles.get(currentSq);
 	if (!tile || tile.held) return;
 	tile.held = true;
-	evidencePieces.tint(currentSq, 0x9fd2ff);
 	audio.confirm();
 	renderCaseboard();
 	closeTile();

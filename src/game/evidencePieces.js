@@ -7,8 +7,8 @@ import { squareToWorld } from './board.js';
 // Piece layer for the evidence board: one ivory pawn per dealt square.
 // Each Dig In is a real upgrade — pawn, then knight, bishop, rook — and each
 // step stands a little bigger than the last, so how far a piece has been dug
-// reads at a glance. On its first upgrade a piece rolls black (obsidian) or
-// white (ivory) at random and keeps that colour through later tiers.
+// reads at a glance. Colour alternates with every step: white pawn, black
+// knight, white bishop, black rook.
 const TIERS = [
 	{ type: PAWN, scale: 1 },
 	{ type: KNIGHT, scale: 1.25 },
@@ -35,25 +35,20 @@ export function createEvidencePieces(scene) {
 		return mesh;
 	}
 
-	// Move a piece up to the given tier: new shape, larger, and (once) a random side.
+	// Move a piece up to the given tier: new shape, larger, and the other side's
+	// colour from the tier before (odd tiers black, even tiers white).
 	function upgrade(sq, tier) {
 		const mesh = bySquare.get(sq);
 		if (!mesh) return;
 		const t = TIERS[Math.min(Math.max(tier, 0), MAX_TIER)];
 		mesh.geometry = geometries[t.type];
 		mesh.scale.setScalar(t.scale);
-		if (tier > 0 && !mesh.userData.side) {
-			mesh.userData.side = Math.random() < 0.5 ? 'ivory' : 'obsidian';
-			if (mesh.userData.side === 'obsidian') {
-				mesh.material.dispose();
-				mesh.material = pieceMaterial('obsidian');
-			}
+		const side = tier % 2 === 1 ? 'obsidian' : 'ivory';
+		if (mesh.userData.side !== side) {
+			mesh.material.dispose();
+			mesh.material = pieceMaterial(side);
+			mesh.userData.side = side;
 		}
-	}
-
-	function tint(sq, color) {
-		const mesh = bySquare.get(sq);
-		if (mesh) mesh.material.color.set(color);
 	}
 
 	function hide(sq) {
@@ -69,5 +64,5 @@ export function createEvidencePieces(scene) {
 		bySquare.clear();
 	}
 
-	return { spawn, upgrade, tint, hide, reset, get meshes() { return [...bySquare.values()]; } };
+	return { spawn, upgrade, hide, reset, get meshes() { return [...bySquare.values()]; } };
 }
