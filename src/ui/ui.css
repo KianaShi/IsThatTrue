@@ -931,6 +931,9 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 	-webkit-backdrop-filter: blur(8px);
 }
 .accusescreen[hidden] { display: none; }
+/* The HUD lets clicks fall through to the scene and only re-enables its buttons, but the
+   final-theory answers are radio inputs and labels, so both modal panels take pointer input themselves. */
+.suspectboard, .accusescreen { pointer-events: auto; }
 
 .ac-card {
 	width: min(94vw, 520px);
