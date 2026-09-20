@@ -1071,3 +1071,12 @@ button.sb-slot.filled:disabled { opacity: .35; cursor: not-allowed; }
 .sb-slot-star:focus-visible { outline: 2px solid var(--snow); outline-offset: -2px; border-radius: 6px; }
 .sb-slot-star:hover { color: var(--snow); }
 .sb-slot-star.on { color: #f5c518; }
+
+/* Title screen: the lone Game Start button rests white and only turns red under the pointer,
+   so the keyboard selection state (.sel) is not shown here. */
+[data-menu="title"] .mi { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .75); color: #fff; }
+[data-menu="title"] .mi i { width: 0; }
+[data-menu="title"] .mi .arr { color: #fff; }
+[data-menu="title"] .mi:hover { background: rgba(212, 0, 39, .30); border-color: var(--acc-bright); }
+[data-menu="title"] .mi:hover i { width: 20px; }
+[data-menu="title"] .mi:hover .arr { color: var(--acc-bright); }
