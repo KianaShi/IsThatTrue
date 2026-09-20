@@ -409,8 +409,11 @@ function dealTiles(deck) {
 	for (const key of Object.keys(assignments)) assignments[key] = [];
 	for (const q of QUESTIONS) accuseAnswers[q.key] = null;
 	deck.forEach((tile, i) => {
-		if (i >= 64) return;
-		const sq = Math.floor(i / 8) * 16 + (i % 8);
+		if (i >= 32) return;
+		// Two ranks at the top (rows 0-1), two at the bottom (rows 6-7) —
+		// an opening-position shape, with the middle of the board left clear.
+		const row = i < 16 ? Math.floor(i / 8) : 6 + Math.floor((i - 16) / 8);
+		const sq = row * 16 + (i % 8);
 		tile.revealed = false;
 		tile.dug = false;
 		tile.held = false;
