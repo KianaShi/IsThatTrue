@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Piece render / export (dev only)</title>
+<style>
+	body { margin: 0; padding: 20px; background: #10131b; color: #dfe6f5; font: 13px/1.5 ui-monospace, Menlo, monospace; }
+	.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+	select, button { font: inherit; padding: 6px 10px; background: #1b2030; color: inherit; border: 1px solid #3a4258; border-radius: 4px; cursor: pointer; }
+	button:hover { border-color: #ff3860; }
+	/* checkerboard so the transparent background is visible */
+	#frame { width: 512px; height: 512px; background: repeating-conic-gradient(#20263a 0 25%, #171b29 0 50%) 0 0 / 24px 24px; border: 1px solid #3a4258; }
+	canvas { width: 512px; height: 512px; display: block; }
+	#log { margin-top: 12px; white-space: pre-wrap; color: #8a93ab; }
+</style>
+</head>
+<body>
+	<div class="row">
+		<label>piece <select id="piece"></select></label>
+		<label>side <select id="side"><option>white</option><option>black</option></select></label>
+		<label>variant <select id="variant"><option value="">normal</option><option value="critical">critical</option></select></label>
+		<button id="download">Export PNG</button>
+		<button id="saveAll">Save all to assets/chess/ (needs npm run render)</button>
+	</div>
+	<div id="frame"><canvas id="c"></canvas></div>
+	<div id="log">Angle/zoom/light constants are at the top of tools/render-piece.js, or override with ?rx=&ry=&rz=&zoom=&light= in the URL.</div>
+	<script type="importmap">
+	{ "imports": { "three": "../vendor/three.module.min.js", "three/addons/": "../vendor/addons/" } }
+	</script>
+	<script type="module" src="./render-piece.js"></script>
+</body>
+</html>

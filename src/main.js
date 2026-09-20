@@ -55,10 +55,10 @@ const board = createBoard(scene);
 const evidencePieces = createEvidencePieces(scene);
 
 const SUSPECTS = [
-	{ key: 'ethan', name: 'Ethan Cole', img: './assets/ethan-cole.jpg' },
-	{ key: 'avery', name: 'Avery Chen', img: './assets/avery-chen.jpg' },
-	{ key: 'olivia', name: 'Olivia Grant', img: './assets/olivia-grant.jpg' },
-	{ key: 'noah', name: 'Noah Reed', img: './assets/noah-reed.jpg' }
+	{ key: 'ethan', role: 'Research Scientist', name: 'Ethan Cole', img: './assets/ethan-cole.jpg' },
+	{ key: 'avery', role: 'Security Engineer', name: 'Avery Chen', img: './assets/avery-chen.jpg' },
+	{ key: 'olivia', role: 'Product Manager', name: 'Olivia Grant', img: './assets/olivia-grant.jpg' },
+	{ key: 'noah', role: 'Temporary Contractor', name: 'Noah Reed', img: './assets/noah-reed.jpg' }
 ];
 const SLOTS_PER_SUSPECT = 6;
 
@@ -101,8 +101,17 @@ const hud = createHud({ onTool: tool => {
 
 // ── evidence actions ────────────────────────────────────────────
 
-// Glyph for each tier, indexed by a tile's `dugLevel`.
-const TIER_GLYPH = ['♟', '♞', '♝', '♚'];
+// Piece for each tier, indexed by a tile's `dugLevel`.
+const PIECE_NAMES = ['pawn', 'knight', 'bishop', 'king'];
+
+/**
+ * Path of the pre-rendered icon for a tile's current piece. Icons are static
+ * PNGs (see tools/render-piece.html), so no card ever renders 3D at runtime.
+ * The pawn's files carry no piece name (chess-white.png).
+ * @param {{dugLevel: number, side?: string}} t - A deck tile.
+ * @returns {string} Image URL.
+ */
+const pieceIcon = t => `./assets/chess/web/chess-${t.dugLevel ? PIECE_NAMES[t.dugLevel] + '-' : ''}${t.side === 'obsidian' ? 'black' : 'white'}.png`;
 
 /**
  * Spend one Dig In on the piece whose card is open: reveal its next level of
@@ -121,10 +130,13 @@ function doDig() {
 	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
-	evidencePieces.upgrade(currentSq, tile.dugLevel);
+	tile.side = evidencePieces.upgrade(currentSq, tile.dugLevel);
 	audio.clue();
 	renderBasketBar();
 }
+
+// How many held-but-unplaced pieces the basket can carry at once.
+const BASKET_SIZE = 4;
 
 // Hold: the piece stays exactly where it is on the board. It just gets
 // flagged as worth revisiting, so it shows up in the suspect board's
@@ -132,6 +144,10 @@ function doDig() {
 function doHold() {
 	const tile = tiles.get(currentSq);
 	if (!tile || tile.held) return;
+	if ([...tiles.values()].filter(t => t.held && !t.placedTo).length >= BASKET_SIZE) {
+		hud.toast(`The basket holds ${BASKET_SIZE} pieces. Place one under a suspect first.`);
+		return;
+	}
 	tile.held = true;
 	audio.confirm();
 	renderCaseboard();
@@ -181,12 +197,22 @@ function doSubmit() {
 	audio[allRight ? 'solve' : 'fail']?.();
 }
 
+/**
+ * Open the suspect board on whichever suspect was last shown, with the basket
+ * drawer closed so the player always lands on the slots first.
+ * @returns {void}
+ */
 function openSuspectboard() {
+	sbBasketOpen = false;
 	renderCaseboard();
 	document.querySelector('[data-slot="suspectboard"]').hidden = false;
 	audio.confirm();
 }
 
+/**
+ * Hide the suspect board (the basket drawer state is reset on the next open).
+ * @returns {void}
+ */
 function closeSuspectboard() {
 	document.querySelector('[data-slot="suspectboard"]').hidden = true;
 	audio.back();
@@ -225,51 +251,117 @@ document.querySelector('[data-slot="accusescreen"]').addEventListener('click', e
 	renderAccuseScreen();
 });
 
+
+// Which suspect the board is showing, and whether the basket drawer is up.
+let sbIndex = 0;
+let sbBasketOpen = false;
+
+/**
+ * Markup for one tile in the suspect board: the piece as it currently stands
+ * (its rendered icon, black or white) over the evidence's name. Used for filled slots
+ * and for the basket drawer alike.
+ * @param {number} sq - 0x88 board square of the evidence.
+ * @param {object} t - The deck tile.
+ * @param {string} attr - Attributes for the button (e.g. a data-place or data-unassign hook).
+ * @param {string} [badge] - Extra markup appended inside the button.
+ * @returns {string} HTML for the tile.
+ */
+function pieceTile(sq, t, attr, badge = '') {
+	return `<button type="button" class="sb-slot filled" ${attr}>
+		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
+		<span class="sb-slot-label"><span class="lbl">${t.label}</span></span>${badge}
+	</button>`;
+}
+
+/**
+ * Keep every suspect-board label on one line. A label that fits is left alone;
+ * one that overflows gets the `marquee` class and the distance it has to slide,
+ * so long evidence names scroll left and right instead of wrapping or clipping.
+ * Must run after layout, so callers schedule it with requestAnimationFrame.
+ * @returns {void}
+ */
+function fitLabels() {
+	document.querySelectorAll('.sb-slot-label').forEach(el => {
+		const text = el.firstElementChild;
+		const overflow = text ? Math.ceil(text.scrollWidth - el.clientWidth) : 0;
+		el.classList.toggle('marquee', overflow > 1);
+		if (overflow > 1) {
+			el.style.setProperty('--shift', `-${overflow + 2}px`);
+			el.style.setProperty('--dur', `${Math.max(3, overflow / 22 + 2.5).toFixed(1)}s`);
+		}
+	});
+}
+
 /**
  * Redraw the always-visible basket strip: every held-but-unplaced piece gets a
- * chip showing its current tier glyph, board square and name.
+ * chip showing its current piece icon, board square and name.
  * @returns {void}
  */
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
+	const count = document.querySelector('[data-slot="basketbar-count"]');
+	count.textContent = `${held.length}/${BASKET_SIZE}`;
+	count.classList.toggle('full', held.length >= BASKET_SIZE);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
 	slots.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="basket-chip"><span class="glyph">${TIER_GLYPH[t.dugLevel]}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
+		<div class="basket-chip"><img class="chip-icon" src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
 		: '<span class="basketbar-empty">Add evidence to fill it.</span>';
 }
 
-// Held-but-unplaced evidence: the tray the player picks from to decide
-// whether (and to whom) a piece of evidence gets placed.
+/**
+ * Redraw the basket strip and the suspect board. The board shows one suspect
+ * at a time; held-but-unplaced evidence lives in the basket drawer, where
+ * tapping a piece places it under whoever is on screen, and tapping a placed
+ * piece sends it back to the basket.
+ * @returns {void}
+ */
 function renderCaseboard() {
 	renderBasketBar();
+	const s = SUSPECTS[sbIndex];
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
-	const basketEl = document.querySelector('[data-slot="cb-basket"]');
-	document.querySelector('[data-slot="cb-count"]').textContent = `(${held.length})`;
-	basketEl.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="cb-item" data-sq="${sq}">
-			<span class="cb-label">${squareName(sq)} — ${t.label}</span>
-			<div class="cb-assign">${SUSPECTS.map(s => `<button data-assign="${sq}:${s.key}" ${assignments[s.key].length >= SLOTS_PER_SUSPECT ? 'disabled' : ''}>${s.name.split(' ')[0]}</button>`).join('')}</div>
-		</div>`).join('') : '<p class="cb-empty">Hold a piece of evidence to add it here.</p>';
+	const full = assignments[s.key].length >= SLOTS_PER_SUSPECT;
 
-	const suspectsEl = document.querySelector('[data-slot="cb-suspects"]');
-	suspectsEl.innerHTML = SUSPECTS.map(s => `
-		<div class="sb-suspect">
-			<img src="${s.img}" alt="${s.name}" loading="lazy">
-			<span class="cb-sname">${s.name}</span>
-			<div class="sb-slots">${Array.from({ length: SLOTS_PER_SUSPECT }, (_, i) => {
-				const item = assignments[s.key][i];
-				return item
-					? `<button type="button" class="sb-slot filled" data-unassign="${s.key}:${item.sq}" title="Move back to the basket">
-						<span class="sb-slot-label">${item.label}</span><span class="sb-slot-x">×</span>
-					</button>`
-					: '<div class="sb-slot">—</div>';
-			}).join('')}</div>
-		</div>`).join('');
+	document.querySelector('[data-slot="sb-suspect"]').innerHTML = `
+		<img src="${s.img}" alt="${s.name}">
+		<span class="cb-sname">${s.name}</span>
+		<p class="sb-role">${s.role}</p>
+		<div class="sb-slots">${Array.from({ length: SLOTS_PER_SUSPECT }, (_, i) => {
+			const item = assignments[s.key][i];
+			const t = item && tiles.get(item.sq);
+			return t
+				? pieceTile(item.sq, t, `data-unassign="${s.key}:${item.sq}" title="Move back to the basket"`, '<span class="sb-slot-x">×</span>')
+				: '<button type="button" class="sb-slot" data-sb="basket" aria-label="Open the basket"></button>';
+		}).join('')}</div>`;
+
+	document.querySelector('[data-slot="sb-dots"]').innerHTML = SUSPECTS.map((x, i) =>
+		`<button type="button" class="${i === sbIndex ? 'on' : ''}" data-sb-go="${i}" aria-label="${x.name}"${i === sbIndex ? ' aria-current="true"' : ''}></button>`).join('');
+
+	document.querySelector('[data-slot="cb-count"]').textContent = held.length;
+	document.querySelector('[data-slot="sb-drawer"]').hidden = !sbBasketOpen;
+	const basketBtn = document.querySelector('.sb-basket-btn');
+	basketBtn.setAttribute('aria-expanded', String(sbBasketOpen));
+	basketBtn.setAttribute('aria-label', `${sbBasketOpen ? 'Close' : 'Open'} the basket (${held.length})`);
+	document.querySelector('[data-slot="sb-drawer-title"]').textContent =
+		held.length ? `Basket · tap a piece to place it under ${s.name.split(' ')[0]}` : 'Basket';
+	document.querySelector('[data-slot="cb-basket"]').innerHTML = held.length
+		? held.map(([sq, t]) => pieceTile(sq, t, `data-place="${sq}" ${full ? 'disabled' : ''}`)).join('')
+		: '<p class="cb-empty">Nothing held yet. Add evidence to the basket from the board.</p>';
+	requestAnimationFrame(fitLabels);
 }
 
 document.querySelector('[data-slot="suspectboard"]').addEventListener('click', event => {
-	const assign = event.target.closest('[data-assign]');
-	if (assign && !assign.disabled) { const [sq, key] = assign.dataset.assign.split(':'); placeEvidence(Number(sq), key); return; }
+	const nav = event.target.closest('[data-sb]');
+	if (nav) {
+		const act = nav.dataset.sb;
+		if (act === 'prev' || act === 'next') sbIndex = (sbIndex + (act === 'next' ? 1 : -1) + SUSPECTS.length) % SUSPECTS.length;
+		else if (act === 'basket') sbBasketOpen = !sbBasketOpen;
+		renderCaseboard();
+		return;
+	}
+	const go = event.target.closest('[data-sb-go]');
+	if (go) { sbIndex = Number(go.dataset.sbGo); renderCaseboard(); return; }
+	const place = event.target.closest('[data-place]');
+	if (place && !place.disabled) { placeEvidence(Number(place.dataset.place), SUSPECTS[sbIndex].key); return; }
 	const un = event.target.closest('[data-unassign]');
 	if (un) { const [key, sq] = un.dataset.unassign.split(':'); unassign(key, Number(sq)); }
 });
@@ -443,6 +535,7 @@ function dealTiles(deck) {
 		}
 		tile.revealed = false;
 		tile.dugLevel = 0;
+		tile.side = 'ivory';
 		tile.held = false;
 		tile.placedTo = null;
 		tiles.set(sq, tile);
