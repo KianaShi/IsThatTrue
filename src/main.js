@@ -410,10 +410,16 @@ function dealTiles(deck) {
 	for (const q of QUESTIONS) accuseAnswers[q.key] = null;
 	deck.forEach((tile, i) => {
 		if (i >= 32) return;
-		// Two ranks at the top (rows 0-1), two at the bottom (rows 6-7) —
-		// an opening-position shape, with the middle of the board left clear.
-		const row = i < 16 ? Math.floor(i / 8) : 6 + Math.floor((i - 16) / 8);
-		const sq = row * 16 + (i % 8);
+		// A tile's id is its square ("B7" = file B, rank 7), which is also what
+		// connectsTo refers to, so place by id. Ids that are missing, malformed
+		// or already taken fall back to the index-based opening-position shape:
+		// two ranks at the top (rows 0-1), two at the bottom (rows 6-7).
+		const m = /^([A-H])([1-8])$/.exec(tile.id || '');
+		let sq = m ? (Number(m[2]) - 1) * 16 + 'ABCDEFGH'.indexOf(m[1]) : -1;
+		if (sq < 0 || tiles.has(sq)) {
+			const row = i < 16 ? Math.floor(i / 8) : 6 + Math.floor((i - 16) / 8);
+			sq = row * 16 + (i % 8);
+		}
 		tile.revealed = false;
 		tile.dug = false;
 		tile.held = false;
