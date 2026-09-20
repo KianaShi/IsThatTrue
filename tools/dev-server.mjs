@@ -3,7 +3,7 @@
 // body into assets/chess/ (or assets/chess/web/ for the small UI copies). Bound to localhost; never part of the shipped game.
 import { createServer } from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { dirname, extname, join, normalize, resolve } from 'node:path';
+import { dirname, extname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -41,7 +41,8 @@ createServer(async (req, res) => {
 		}
 		const rel = normalize(decodeURIComponent(url.pathname)).replace(/^[/\\]+/, '');
 		const file = join(ROOT, rel || 'index.html');
-		if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
+		const fromRoot = relative(ROOT, file);
+		if (fromRoot === '..' || fromRoot.startsWith('..' + sep) || isAbsolute(fromRoot)) { res.writeHead(403).end(); return; }
 		const data = await readFile(file);
 		res.writeHead(200, { 'Content-Type': TYPES[extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' }).end(data);
 	} catch {

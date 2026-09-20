@@ -135,12 +135,19 @@ function doDig() {
 	renderBasketBar();
 }
 
+// How many held-but-unplaced pieces the basket can carry at once.
+const BASKET_SIZE = 4;
+
 // Hold: the piece stays exactly where it is on the board. It just gets
 // flagged as worth revisiting, so it shows up in the suspect board's
 // "held" tray — placing it against a suspect is a separate decision.
 function doHold() {
 	const tile = tiles.get(currentSq);
 	if (!tile || tile.held) return;
+	if ([...tiles.values()].filter(t => t.held && !t.placedTo).length >= BASKET_SIZE) {
+		hud.toast(`The basket holds ${BASKET_SIZE} pieces. Place one under a suspect first.`);
+		return;
+	}
 	tile.held = true;
 	audio.confirm();
 	renderCaseboard();
@@ -292,6 +299,9 @@ function fitLabels() {
  */
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
+	const count = document.querySelector('[data-slot="basketbar-count"]');
+	count.textContent = `${held.length}/${BASKET_SIZE}`;
+	count.classList.toggle('full', held.length >= BASKET_SIZE);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
 	slots.innerHTML = held.length ? held.map(([sq, t]) => `
 		<div class="basket-chip"><img class="chip-icon" src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')

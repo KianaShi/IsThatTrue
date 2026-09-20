@@ -44,6 +44,7 @@ export function createHud({ onTool }) {
 
 		toast(text, ms = 3400) {
 			toastBox.textContent = text;
+			toastBox.classList.toggle('over-card', !$('tile').hidden);
 			toastBox.classList.add('on');
 			clearTimeout(toastTimer);
 			toastTimer = setTimeout(() => toastBox.classList.remove('on'), ms);

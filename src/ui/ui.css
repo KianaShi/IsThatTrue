@@ -615,6 +615,8 @@ body.playing #hud { opacity: 1; }
 	transition: opacity .35s var(--ease), transform .35s var(--ease);
 }
 .hud-toast.on { opacity: 1; transform: translate(-50%, 0); }
+/* Raised above the square card (z-index 40) and moved to the top while a card is open, so it is not hidden behind it. */
+.hud-toast.over-card { z-index: 60; bottom: auto; top: 12vh; background: rgba(6, 8, 16, .96); color: var(--snow); }
 
 /* ── basket bar: the horizontal strip evidence lands in when held ──── */
 
@@ -634,6 +636,9 @@ body.playing #hud { opacity: 1; }
 	backdrop-filter: blur(6px);
 	-webkit-backdrop-filter: blur(6px);
 }
+.basketbar-head { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.basketbar-count { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; color: var(--snow); }
+.basketbar-count.full { color: var(--acc-bright); }
 .basketbar-label {
 	font-family: var(--mono);
 	font-size: 9.5px;
@@ -645,27 +650,30 @@ body.playing #hud { opacity: 1; }
 .basketbar-slots {
 	flex: 1;
 	display: flex;
-	gap: 8px;
-	overflow-x: auto;
+	gap: 6px;
 	min-height: 34px;
 }
 .basketbar-empty { font-size: 10px; color: var(--faint); align-self: center; }
 
 .basket-chip {
-	flex-shrink: 0;
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 25%;
+	overflow: hidden;
+	text-overflow: ellipsis;
 	display: flex;
 	align-items: center;
-	gap: 6px;
-	padding: 6px 10px;
+	gap: 4px;
+	padding: 5px 6px;
 	border: 1px solid var(--acc-soft);
 	border-radius: var(--r);
 	background: rgba(212, 0, 39, .12);
-	font-size: 11px;
+	font-size: 10px;
 	color: var(--snow);
 	white-space: nowrap;
 	animation: chipDrop .32s var(--ease);
 }
-.basket-chip .chip-icon { width: 26px; height: 26px; object-fit: contain; }
+.basket-chip .chip-icon { width: 20px; height: 20px; flex-shrink: 0; object-fit: contain; }
 .basket-chip .chip-sq {
 	font-size: 9px; color: var(--ink); background: var(--acc-bright);
 	border-radius: 3px; padding: 1px 4px; letter-spacing: .04em;
@@ -824,6 +832,10 @@ body.playing #hud { opacity: 1; }
 .sb-role { margin: 2px 0 16px; font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); }
 
 .sb-slots, .sb-heldlist { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+/* The basket drawer holds four pieces, so it lays them out four across, a little smaller. */
+.sb-heldlist { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sb-heldlist .sb-slot .pc img { width: clamp(36px, 11vw, 60px); }
+.sb-heldlist .sb-slot-label { font-size: 8.5px; }
 .sb-slot {
 	min-width: 0;
 	aspect-ratio: 1;
