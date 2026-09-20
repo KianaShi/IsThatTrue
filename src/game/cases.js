@@ -44,21 +44,21 @@ export const STORIES = {
 		// two board neighbours point at the same suspect — grouping one
 		// suspect's evidence together gave the game away by position alone.
 		deck: [
-			{ id: "A1", kind: 'clue', label: "Ethan's Objection", real: true,
+			{ id: "A1", kind: 'clue', label: "Launch Objection", real: true,
 				relevance: "medium", redHerring: true,
-				aboutSuspect: "ethan", connectsTo: ["B7", "F2", "B2"],
-				text: "The lead researcher opposed the Project Helix launch and wanted it delayed.",
+				aboutSuspect: "ethan", connectsTo: ["B7", "B2"],
+				text: "Someone on the team opposed the Project Helix launch and wanted it delayed.",
 				digLevels: [
 					"Internal messages show Ethan repeatedly raised safety concerns about releasing the model too early.",
 					"He proposed delaying the launch by at least two weeks, in a message sent to the whole leadership team.",
 					"Leadership rejected the delay in writing, giving Ethan a documented but overruled grievance."
 				] },
-			{ id: "B1", kind: 'clue', label: "Noah's Opportunity", real: true,
+			{ id: "B1", kind: 'clue', label: "Near the Coat Rack", real: true,
 				relevance: "high", redHerring: false,
 				aboutSuspect: "noah", connectsTo: ["C1", "G1", "H1"],
-				text: "Noah was near Ethan's belongings before the unauthorized Lab 3 entry.",
+				text: "Someone was seen by the jackets and bags near the Lab 3 entrance shortly before the unauthorized entry.",
 				digLevels: [
-					"Noah had an opportunity to take Ethan's badge before 11:31 PM.",
+					"It was Noah, and he had an opportunity to take Ethan's badge before 11:31 PM.",
 					"Noah was seen near the jacket rack by the lab entrance at 11:22 PM, six minutes after Ethan left it there.",
 					"No one else is placed near that rack in the eleven minutes before the badge was used."
 				] },
@@ -82,7 +82,7 @@ export const STORIES = {
 				] },
 			{ id: "E1", kind: 'clue', label: "Upload Origin", real: true,
 				relevance: "critical", redHerring: false,
-				aboutSuspect: "ethan", connectsTo: ["G7", "H1"],
+				aboutSuspect: null, connectsTo: ["G7", "H1"],
 				text: "The original leaked video was uploaded at 11:47 PM from Lab 3's network.",
 				digLevels: [
 					"Network records identify the location of the connection, not the individual using it.",
@@ -161,15 +161,14 @@ export const STORIES = {
 					"The exit swipe was logged at 9:58 PM, over an hour before the leak.",
 					"An exit swipe only proves he left once, it says nothing about whether he came back."
 				] },
-			{ id: "F2", kind: 'clue', label: "Video Call Witnesses", real: true,
-				relevance: "critical", redHerring: false,
-				aboutSuspect: "ethan", connectsTo: ["B7", "C1", "G7"],
-				text: "Ethan was visibly present on the video call.",
+			{ id: "F2", kind: 'clue', label: "Parking Gate Glitch", real: false,
+				relevance: "low", redHerring: true,
+				aboutSuspect: null, connectsTo: [],
+				text: "The parking garage gate logged an unusually long open cycle around 11:10 PM.",
 				digLevels: [
-					"Multiple participants confirm seeing and speaking with him during the period when Lab 3 was accessed.",
-					"Two separate colleagues recall Ethan answering a direct question at 11:38 PM, one minute before the folder was accessed.",
-					"It is not physically possible to be speaking on camera and typing in Lab 3 at the same instant."
-				] },
+					"Facility logs show the barrier stayed raised for four minutes.",
+					"The gate's sensor had already been reported faulty twice that month.",
+					"Its timing lines up with nothing else in the investigation."] },
 			{ id: "G2", kind: 'clue', label: "The Extra Clip", real: false,
 				relevance: "critical", redHerring: false,
 				aboutSuspect: "olivia", connectsTo: ["F8", "D1"],
@@ -199,7 +198,7 @@ export const STORIES = {
 				] },
 			{ id: "B7", kind: 'clue', label: "Ethan's Alibi", real: true,
 				relevance: "critical", redHerring: false,
-				aboutSuspect: "ethan", connectsTo: ["C1", "F2"],
+				aboutSuspect: "ethan", connectsTo: ["C1"],
 				text: "Ethan says he was on a video call during the incident.",
 				digLevels: [
 					"Meeting records show Ethan joined at 11:24 PM and remained connected until about 11:53 PM.",
