@@ -665,7 +665,7 @@ body.playing #hud { opacity: 1; }
 	white-space: nowrap;
 	animation: chipDrop .32s var(--ease);
 }
-.basket-chip .glyph { font-size: 17px; }
+.basket-chip .chip-icon { width: 26px; height: 26px; object-fit: contain; }
 .basket-chip .chip-sq {
 	font-size: 9px; color: var(--ink); background: var(--acc-bright);
 	border-radius: 3px; padding: 1px 4px; letter-spacing: .04em;
@@ -816,7 +816,7 @@ body.playing #hud { opacity: 1; }
 .sb-arrow:hover { color: var(--acc-bright); opacity: 1; }
 
 .sb-suspect { flex: 1; min-width: 0; text-align: center; }
-.sb-suspect img {
+.sb-suspect > img {
 	width: 92px; height: 92px; object-fit: cover; border-radius: 50%;
 	border: 1px solid var(--ghost);
 }
@@ -841,9 +841,8 @@ button.sb-slot.filled {
 	color: var(--snow);
 }
 button.sb-slot.filled:hover { border-color: var(--acc-bright); background: #5c0d11; }
-.sb-slot .pc { flex: 1; display: flex; align-items: center; font-size: clamp(30px, 9vw, 46px); line-height: 1; }
-.pc-white { color: #f4f1ea; text-shadow: 0 1px 2px rgba(0, 0, 0, .75); }
-.pc-black { color: #0d1017; text-shadow: 0 0 2px #dfe6f5, 0 0 1px #dfe6f5; }
+.sb-slot .pc { flex: 1; display: flex; align-items: center; }
+.sb-slot .pc img { display: block; width: clamp(46px, 15vw, 78px); height: auto; pointer-events: none; }
 .sb-slot-label {
 	width: 100%; font-size: 9.5px; line-height: 1.25;
 	display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;

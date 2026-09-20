@@ -101,8 +101,17 @@ const hud = createHud({ onTool: tool => {
 
 // ── evidence actions ────────────────────────────────────────────
 
-// Glyph for each tier, indexed by a tile's `dugLevel`.
-const TIER_GLYPH = ['♟︎', '♞', '♝', '♚'];
+// Piece for each tier, indexed by a tile's `dugLevel`.
+const PIECE_NAMES = ['pawn', 'knight', 'bishop', 'king'];
+
+/**
+ * Path of the pre-rendered icon for a tile's current piece. Icons are static
+ * PNGs (see tools/render-piece.html), so no card ever renders 3D at runtime.
+ * The pawn's files carry no piece name (chess-white.png).
+ * @param {{dugLevel: number, side?: string}} t - A deck tile.
+ * @returns {string} Image URL.
+ */
+const pieceIcon = t => `./assets/chess/web/chess-${t.dugLevel ? PIECE_NAMES[t.dugLevel] + '-' : ''}${t.side === 'obsidian' ? 'black' : 'white'}.png`;
 
 /**
  * Spend one Dig In on the piece whose card is open: reveal its next level of
@@ -241,15 +250,8 @@ let sbIndex = 0;
 let sbBasketOpen = false;
 
 /**
- * CSS class for a tile's piece colour.
- * @param {{side?: string}} t - A tile; `side` is 'obsidian' for black pieces.
- * @returns {'pc-black'|'pc-white'}
- */
-const pcClass = t => (t.side === 'obsidian' ? 'pc-black' : 'pc-white');
-
-/**
  * Markup for one tile in the suspect board: the piece as it currently stands
- * (tier glyph, black or white) over the evidence's name. Used for filled slots
+ * (its rendered icon, black or white) over the evidence's name. Used for filled slots
  * and for the basket drawer alike.
  * @param {number} sq - 0x88 board square of the evidence.
  * @param {object} t - The deck tile.
@@ -259,21 +261,21 @@ const pcClass = t => (t.side === 'obsidian' ? 'pc-black' : 'pc-white');
  */
 function pieceTile(sq, t, attr, badge = '') {
 	return `<button type="button" class="sb-slot filled" ${attr}>
-		<span class="pc ${pcClass(t)}">${TIER_GLYPH[t.dugLevel]}</span>
+		<span class="pc"><img src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"></span>
 		<span class="sb-slot-label">${t.label}</span>${badge}
 	</button>`;
 }
 
 /**
  * Redraw the always-visible basket strip: every held-but-unplaced piece gets a
- * chip showing its current tier glyph, board square and name.
+ * chip showing its current piece icon, board square and name.
  * @returns {void}
  */
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
 	slots.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="basket-chip"><span class="glyph ${pcClass(t)}">${TIER_GLYPH[t.dugLevel]}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
+		<div class="basket-chip"><img class="chip-icon" src="${pieceIcon(t)}" alt="${PIECE_NAMES[t.dugLevel]}" draggable="false"><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
 		: '<span class="basketbar-empty">Add evidence to fill it.</span>';
 }
 
@@ -303,10 +305,13 @@ function renderCaseboard() {
 		}).join('')}</div>`;
 
 	document.querySelector('[data-slot="sb-dots"]').innerHTML = SUSPECTS.map((x, i) =>
-		`<button type="button" class="${i === sbIndex ? 'on' : ''}" data-sb-go="${i}" aria-label="${x.name}"></button>`).join('');
+		`<button type="button" class="${i === sbIndex ? 'on' : ''}" data-sb-go="${i}" aria-label="${x.name}"${i === sbIndex ? ' aria-current="true"' : ''}></button>`).join('');
 
 	document.querySelector('[data-slot="cb-count"]').textContent = held.length;
 	document.querySelector('[data-slot="sb-drawer"]').hidden = !sbBasketOpen;
+	const basketBtn = document.querySelector('.sb-basket-btn');
+	basketBtn.setAttribute('aria-expanded', String(sbBasketOpen));
+	basketBtn.setAttribute('aria-label', sbBasketOpen ? 'Close the basket' : 'Open the basket');
 	document.querySelector('[data-slot="sb-drawer-title"]').textContent =
 		held.length ? `Basket · tap a piece to place it under ${s.name.split(' ')[0]}` : 'Basket';
 	document.querySelector('[data-slot="cb-basket"]').innerHTML = held.length
