@@ -191,10 +191,8 @@ function doSubmit() {
 	}
 	const results = QUESTIONS.map(q => accuseAnswers[q.key] === q.answer);
 	const allRight = results.every(Boolean);
-	resultEl.textContent = allRight
-		? '✓ CHECKMATE — Noah leaked it, Olivia altered it. Case closed.'
-		: `Not quite — ${results.filter(Boolean).length} / ${QUESTIONS.length} correct. The trail's still open.`;
-	audio[allRight ? 'solve' : 'fail']?.();
+	resultEl.textContent = '';
+	endCase(allRight);
 }
 
 /**
