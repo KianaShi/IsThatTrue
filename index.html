@@ -216,27 +216,35 @@
 		</div>
 	</div>
 
-	<!-- suspect board: a screen of its own, opened from the hud button -->
+	<!-- suspect board: one suspect at a time, swipe between them, basket bottom-left -->
 	<div class="suspectboard" data-slot="suspectboard" hidden>
 		<div class="sb-card">
-			<svg class="sb-connections" data-slot="sb-connections"></svg>
+			<button class="tb sb-close" data-tool="close-suspects" aria-label="Close">
+				<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+			</button>
 
-			<div class="sb-head">
-				<p class="sb-title">Who does this evidence name?</p>
-				<button class="tb sb-close" data-tool="close-suspects" aria-label="Close">
-					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-				</button>
+			<div class="sb-stage">
+				<button class="sb-arrow" data-sb="prev" aria-label="Previous suspect">‹</button>
+				<div class="sb-suspect" data-slot="sb-suspect"></div>
+				<button class="sb-arrow" data-sb="next" aria-label="Next suspect">›</button>
 			</div>
 
-			<div class="sb-held">
-				<p class="cb-title">Held, not yet placed <span data-slot="cb-count">(0)</span></p>
+			<div class="sb-foot">
+				<button class="sb-basket-btn" data-sb="basket" aria-label="Open the basket">
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-2 11H5L3 9z"/><path d="M8 9l4-6 4 6"/><path d="M9 13v4M12 13v4M15 13v4"/></svg>
+					<b data-slot="cb-count">0</b>
+				</button>
+				<div class="sb-dots" data-slot="sb-dots"></div>
+				<button class="cb-submit sb-accuse" data-tool="accuse">Call Checkmate →</button>
+			</div>
+
+			<div class="sb-drawer" data-slot="sb-drawer" hidden>
+				<div class="sb-drawer-head">
+					<p class="cb-title" data-slot="sb-drawer-title">Basket</p>
+					<button class="sb-drawer-close" data-sb="basket" aria-label="Close the basket">×</button>
+				</div>
 				<div class="sb-heldlist" data-slot="cb-basket"></div>
 			</div>
-
-			<div class="sb-suspects" data-slot="cb-suspects"></div>
-
-			<p class="sb-note">This board is just for thinking out loud — nothing here is scored. When you're ready to answer for real, call it.</p>
-			<button class="cb-submit" data-tool="accuse">Call Checkmate →</button>
 		</div>
 	</div>
 

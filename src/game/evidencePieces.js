@@ -43,13 +43,15 @@ export function createEvidencePieces(scene) {
 	// the board's turn is on — which then flips for the next interaction.
 	function upgrade(sq, tier) {
 		const mesh = bySquare.get(sq);
-		if (!mesh) return;
+		if (!mesh) return 'ivory';
 		const t = TIERS[Math.min(Math.max(tier, 0), MAX_TIER)];
 		mesh.geometry = geometries[t.type];
 		mesh.scale.set(t.scale, t.scale * (t.stretch || 1), t.scale);
 		mesh.material.dispose();
-		mesh.material = pieceMaterial(nextSide);
-		nextSide = nextSide === 'obsidian' ? 'ivory' : 'obsidian';
+		const side = nextSide;
+		mesh.material = pieceMaterial(side);
+		nextSide = side === 'obsidian' ? 'ivory' : 'obsidian';
+		return side;
 	}
 
 	function hide(sq) {

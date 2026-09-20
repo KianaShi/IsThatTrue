@@ -55,10 +55,10 @@ const board = createBoard(scene);
 const evidencePieces = createEvidencePieces(scene);
 
 const SUSPECTS = [
-	{ key: 'ethan', name: 'Ethan Cole', img: './assets/ethan-cole.jpg' },
-	{ key: 'avery', name: 'Avery Chen', img: './assets/avery-chen.jpg' },
-	{ key: 'olivia', name: 'Olivia Grant', img: './assets/olivia-grant.jpg' },
-	{ key: 'noah', name: 'Noah Reed', img: './assets/noah-reed.jpg' }
+	{ key: 'ethan', role: 'Research Scientist', name: 'Ethan Cole', img: './assets/ethan-cole.jpg' },
+	{ key: 'avery', role: 'Security Engineer', name: 'Avery Chen', img: './assets/avery-chen.jpg' },
+	{ key: 'olivia', role: 'Product Manager', name: 'Olivia Grant', img: './assets/olivia-grant.jpg' },
+	{ key: 'noah', role: 'Temporary Contractor', name: 'Noah Reed', img: './assets/noah-reed.jpg' }
 ];
 const SLOTS_PER_SUSPECT = 6;
 
@@ -103,7 +103,7 @@ const hud = createHud({ onTool: tool => {
 
 // Each Dig In reveals the next level of detail and moves the piece up a tier
 // (pawn, knight, bishop, king). `dugLevel` is how many levels are open.
-const TIER_GLYPH = ['♟', '♞', '♝', '♚'];
+const TIER_GLYPH = ['♟︎', '♞', '♝', '♚'];
 
 function doDig() {
 	const tile = tiles.get(currentSq);
@@ -115,7 +115,7 @@ function doDig() {
 	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
-	evidencePieces.upgrade(currentSq, tile.dugLevel);
+	tile.side = evidencePieces.upgrade(currentSq, tile.dugLevel);
 	audio.clue();
 	renderBasketBar();
 }
@@ -176,6 +176,7 @@ function doSubmit() {
 }
 
 function openSuspectboard() {
+	sbBasketOpen = false;
 	renderCaseboard();
 	document.querySelector('[data-slot="suspectboard"]').hidden = false;
 	audio.confirm();
@@ -219,48 +220,76 @@ document.querySelector('[data-slot="accusescreen"]').addEventListener('click', e
 	renderAccuseScreen();
 });
 
-// The always-visible strip: every held-but-unplaced piece gets a chip here
-// the instant it's added, dropping in like it just landed in the basket.
+
+// Which suspect the board is showing, and whether the basket drawer is up.
+let sbIndex = 0;
+let sbBasketOpen = false;
+
+const pcClass = t => (t.side === 'obsidian' ? 'pc-black' : 'pc-white');
+
+// One tile in the suspect board: the piece as it currently stands, over the
+// evidence's name. Used for filled slots and for the basket drawer alike.
+function pieceTile(sq, t, attr, badge = '') {
+	return `<button type="button" class="sb-slot filled" ${attr}>
+		<span class="pc ${pcClass(t)}">${TIER_GLYPH[t.dugLevel]}</span>
+		<span class="sb-slot-label">${t.label}</span>${badge}
+	</button>`;
+}
+
 function renderBasketBar() {
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
 	const slots = document.querySelector('[data-slot="basketbar-slots"]');
 	slots.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="basket-chip"><span class="glyph">${TIER_GLYPH[t.dugLevel]}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
+		<div class="basket-chip"><span class="glyph ${pcClass(t)}">${TIER_GLYPH[t.dugLevel]}</span><span class="chip-sq">${squareName(sq)}</span>${t.label}</div>`).join('')
 		: '<span class="basketbar-empty">Add evidence to fill it.</span>';
 }
 
-// Held-but-unplaced evidence: the tray the player picks from to decide
-// whether (and to whom) a piece of evidence gets placed.
+// The suspect board shows one suspect at a time. Held-but-unplaced evidence
+// lives in the basket drawer; tapping a piece there places it under whoever is
+// on screen, and tapping a placed piece sends it back to the basket.
 function renderCaseboard() {
 	renderBasketBar();
+	const s = SUSPECTS[sbIndex];
 	const held = [...tiles.entries()].filter(([, t]) => t.held && !t.placedTo);
-	const basketEl = document.querySelector('[data-slot="cb-basket"]');
-	document.querySelector('[data-slot="cb-count"]').textContent = `(${held.length})`;
-	basketEl.innerHTML = held.length ? held.map(([sq, t]) => `
-		<div class="cb-item" data-sq="${sq}">
-			<span class="cb-label">${squareName(sq)} — ${t.label}</span>
-			<div class="cb-assign">${SUSPECTS.map(s => `<button data-assign="${sq}:${s.key}" ${assignments[s.key].length >= SLOTS_PER_SUSPECT ? 'disabled' : ''}>${s.name.split(' ')[0]}</button>`).join('')}</div>
-		</div>`).join('') : '<p class="cb-empty">Hold a piece of evidence to add it here.</p>';
+	const full = assignments[s.key].length >= SLOTS_PER_SUSPECT;
 
-	const suspectsEl = document.querySelector('[data-slot="cb-suspects"]');
-	suspectsEl.innerHTML = SUSPECTS.map(s => `
-		<div class="sb-suspect">
-			<img src="${s.img}" alt="${s.name}" loading="lazy">
-			<span class="cb-sname">${s.name}</span>
-			<div class="sb-slots">${Array.from({ length: SLOTS_PER_SUSPECT }, (_, i) => {
-				const item = assignments[s.key][i];
-				return item
-					? `<button type="button" class="sb-slot filled" data-unassign="${s.key}:${item.sq}" title="Move back to the basket">
-						<span class="sb-slot-label">${item.label}</span><span class="sb-slot-x">×</span>
-					</button>`
-					: '<div class="sb-slot">—</div>';
-			}).join('')}</div>
-		</div>`).join('');
+	document.querySelector('[data-slot="sb-suspect"]').innerHTML = `
+		<img src="${s.img}" alt="${s.name}">
+		<span class="cb-sname">${s.name}</span>
+		<p class="sb-role">${s.role}</p>
+		<div class="sb-slots">${Array.from({ length: SLOTS_PER_SUSPECT }, (_, i) => {
+			const item = assignments[s.key][i];
+			const t = item && tiles.get(item.sq);
+			return t
+				? pieceTile(item.sq, t, `data-unassign="${s.key}:${item.sq}" title="Move back to the basket"`, '<span class="sb-slot-x">×</span>')
+				: '<button type="button" class="sb-slot" data-sb="basket" aria-label="Open the basket"></button>';
+		}).join('')}</div>`;
+
+	document.querySelector('[data-slot="sb-dots"]').innerHTML = SUSPECTS.map((x, i) =>
+		`<button type="button" class="${i === sbIndex ? 'on' : ''}" data-sb-go="${i}" aria-label="${x.name}"></button>`).join('');
+
+	document.querySelector('[data-slot="cb-count"]').textContent = held.length;
+	document.querySelector('[data-slot="sb-drawer"]').hidden = !sbBasketOpen;
+	document.querySelector('[data-slot="sb-drawer-title"]').textContent =
+		held.length ? `Basket · tap a piece to place it under ${s.name.split(' ')[0]}` : 'Basket';
+	document.querySelector('[data-slot="cb-basket"]').innerHTML = held.length
+		? held.map(([sq, t]) => pieceTile(sq, t, `data-place="${sq}" ${full ? 'disabled' : ''}`)).join('')
+		: '<p class="cb-empty">Nothing held yet. Add evidence to the basket from the board.</p>';
 }
 
 document.querySelector('[data-slot="suspectboard"]').addEventListener('click', event => {
-	const assign = event.target.closest('[data-assign]');
-	if (assign && !assign.disabled) { const [sq, key] = assign.dataset.assign.split(':'); placeEvidence(Number(sq), key); return; }
+	const nav = event.target.closest('[data-sb]');
+	if (nav) {
+		const act = nav.dataset.sb;
+		if (act === 'prev' || act === 'next') sbIndex = (sbIndex + (act === 'next' ? 1 : -1) + SUSPECTS.length) % SUSPECTS.length;
+		else if (act === 'basket') sbBasketOpen = !sbBasketOpen;
+		renderCaseboard();
+		return;
+	}
+	const go = event.target.closest('[data-sb-go]');
+	if (go) { sbIndex = Number(go.dataset.sbGo); renderCaseboard(); return; }
+	const place = event.target.closest('[data-place]');
+	if (place && !place.disabled) { placeEvidence(Number(place.dataset.place), SUSPECTS[sbIndex].key); return; }
 	const un = event.target.closest('[data-unassign]');
 	if (un) { const [key, sq] = un.dataset.unassign.split(':'); unassign(key, Number(sq)); }
 });
@@ -428,6 +457,7 @@ function dealTiles(deck) {
 		}
 		tile.revealed = false;
 		tile.dugLevel = 0;
+		tile.side = 'ivory';
 		tile.held = false;
 		tile.placedTo = null;
 		tiles.set(sq, tile);
