@@ -9,12 +9,16 @@ import { createProps } from './world/props.js';
 import { createBoard, worldToSquare } from './game/board.js';
 import { createEvidencePieces, MAX_TIER } from './game/evidencePieces.js';
 import { createBursts } from './game/fx.js';
-import { STORIES, LEVELS, fmt, buildDeck } from './game/cases.js';
+import { STORIES, LEVEL, fmt, buildDeck } from './game/cases.js';
+import { QUESTIONS } from './game/questions.js';
+import { renderCaseReport } from './ui/case-report.js';
 import { createHud } from './ui/hud.js';
 import { createMenu, loadSettings } from './ui/menu.js';
 import { createAudio } from './core/audio.js';
 
 const settings = loadSettings();
+// Only The Leak has a complete question set and solution.
+if (settings.story !== 's1') settings.story = 's1';
 const audio = createAudio();
 audio.enabled = settings.sound === 'on';
 audio.musicEnabled = settings.music === 'on';
@@ -62,13 +66,7 @@ const SUSPECTS = [
 ];
 const SLOTS_PER_SUSPECT = 6;
 
-// The real answer lives here, not on the thinking board — it's asked as two
-// direct questions on the accusation screen.
-const QUESTIONS = [
-	{ key: 'leaker', text: 'Who leaked the original video?', answer: 'noah' },
-	{ key: 'editor', text: 'Who altered the second video?', answer: 'olivia' }
-];
-const accuseAnswers = { leaker: null, editor: null };
+const accuseAnswers = Object.fromEntries(QUESTIONS.map(q => [q.key, null]));
 
 snowfall.setDensity(settings.snow === 'heavy' ? 1 : settings.snow === 'light' ? 0.45 : 0);
 
@@ -80,6 +78,7 @@ let timeLeft = 0;
 let elapsed = 0;
 // The dealt board: 0x88 square -> tile from the story's deck.
 const tiles = new Map();
+const discardedTiles = new Map();
 let currentSq = -1;
 let dugCount = 0, discardedCount = 0;
 // Assignments are the only place evidence actually "moves" — Hold just
@@ -127,7 +126,7 @@ function doDig() {
 	const levels = tile.digLevels || [];
 	const max = Math.min(levels.length, MAX_TIER);
 	if (tile.dugLevel >= max) return;
-	if (tile.dugLevel === 0) { dugCount++; hud.setClues(dugCount, needed); }
+	if (tile.dugLevel === 0) dugCount++;
 	hud.revealDig(levels[tile.dugLevel] || 'Nothing further surfaces.');
 	tile.dugLevel++;
 	hud.setDigEnabled(tile.dugLevel < max);
@@ -156,7 +155,7 @@ function doStar() {
  */
 function toggleStar(sq) {
 	const tile = tiles.get(sq);
-	if (!tile) return false;
+	if (!playing || !tile) return false;
 	if (!tile.starred && [...tiles.values()].filter(t => t.starred).length >= MAX_STARS) {
 		hud.toast(`You can star ${MAX_STARS} pieces. Remove a star first.`);
 		return false;
@@ -213,6 +212,7 @@ function doDiscard() {
 	const tile = tiles.get(currentSq);
 	if (!tile) return;
 	if (tile.placedTo) assignments[tile.placedTo] = assignments[tile.placedTo].filter(i => i.sq !== currentSq);
+	discardedTiles.set(currentSq, { ...tile, discarded: true, starred: false, held: false, placedTo: null });
 	tiles.delete(currentSq);
 	renderStars();
 	discardedCount++;
@@ -239,18 +239,21 @@ function unassign(key, sq) {
 	renderCaseboard();
 }
 
+/**
+ * Submit the accusation. With any question unanswered it only shows a reminder
+ * and the case carries on; once every question has an answer, the case ends and
+ * the result screen shows the evaluation.
+ * @returns {void}
+ */
 function doSubmit() {
-	const resultEl = document.querySelector('[data-slot="cb-result"]');
-	if (QUESTIONS.some(q => !accuseAnswers[q.key])) {
-		resultEl.textContent = 'Answer both questions before you call it.';
+	if (!playing) return;
+	const missing = QUESTIONS.find(q => !accuseAnswers[q.key]);
+	if (missing) {
+		document.querySelector('[data-slot="cb-result"]').textContent = 'Answer all five questions before submitting your final theory.';
+		document.querySelector(`[name="answer-${missing.key}"]`)?.focus();
 		return;
 	}
-	const results = QUESTIONS.map(q => accuseAnswers[q.key] === q.answer);
-	const allRight = results.every(Boolean);
-	resultEl.textContent = allRight
-		? '✓ CHECKMATE — Noah leaked it, Olivia altered it. Case closed.'
-		: `Not quite — ${results.filter(Boolean).length} / ${QUESTIONS.length} correct. The trail's still open.`;
-	audio[allRight ? 'solve' : 'fail']?.();
+	endCase(QUESTIONS.every(q => accuseAnswers[q.key] === q.answer), 'submitted');
 }
 
 /**
@@ -259,6 +262,7 @@ function doSubmit() {
  * @returns {void}
  */
 function openSuspectboard() {
+	hud.hideTile();
 	sbBasketOpen = false;
 	renderCaseboard();
 	document.querySelector('[data-slot="suspectboard"]').hidden = false;
@@ -275,38 +279,62 @@ function closeSuspectboard() {
 }
 
 // The accusation screen: a separate, deliberate "answer for real" step —
-// the suspect board above it is scratch space and is never scored.
+// The report also evaluates evidence choices and stars from the suspect board.
 function openAccuseScreen() {
+	hud.hideTile();
 	closeSuspectboard();
 	document.querySelector('[data-slot="cb-result"]').textContent = '';
 	renderAccuseScreen();
 	document.querySelector('[data-slot="accusescreen"]').hidden = false;
+	document.querySelector('.ac-choice input:checked, .ac-choice input')?.focus();
 	audio.confirm();
 }
 
 function closeAccuseScreen() {
 	document.querySelector('[data-slot="accusescreen"]').hidden = true;
+	document.querySelector('[data-tool="suspects"]')?.focus();
 	audio.back();
 }
 
 function renderAccuseScreen() {
 	const el = document.querySelector('[data-slot="ac-questions"]');
-	el.innerHTML = QUESTIONS.map(q => `
-		<div class="ac-q">
-			<p class="ac-q-text">${q.text}</p>
-			<div class="ac-choices">${SUSPECTS.map(s => `
-				<button class="ac-choice ${accuseAnswers[q.key] === s.key ? 'selected' : ''}" data-choose="${q.key}:${s.key}">${s.name}</button>`).join('')}</div>
-		</div>`).join('');
+	el.innerHTML = QUESTIONS.map((q, index) => `
+		<fieldset class="ac-q">
+			<legend class="ac-q-text"><span class="ac-number">${index + 1}</span> ${q.text}</legend>
+			<div class="ac-choices">${(q.choices || SUSPECTS).map(s => `
+				<label class="ac-choice ${accuseAnswers[q.key] === s.key ? 'selected' : ''}">
+					<input type="radio" name="answer-${q.key}" value="${s.key}" data-question="${q.key}" ${accuseAnswers[q.key] === s.key ? 'checked' : ''}>
+					<span>${s.name}</span>
+				</label>`).join('')}</div>
+		</fieldset>`).join('');
+	updateAnswerProgress();
 }
 
-document.querySelector('[data-slot="accusescreen"]').addEventListener('click', event => {
-	const choice = event.target.closest('[data-choose]');
-	if (!choice) return;
-	const [key, suspect] = choice.dataset.choose.split(':');
-	accuseAnswers[key] = suspect;
-	renderAccuseScreen();
+function updateAnswerProgress() {
+	const answered = QUESTIONS.filter(q => accuseAnswers[q.key]).length;
+	document.querySelector('[data-slot="ac-progress"]').textContent = `${answered} of ${QUESTIONS.length} answered`;
+}
+
+document.querySelector('[data-slot="accusescreen"]').addEventListener('change', event => {
+	const input = event.target.closest('input[data-question]');
+	if (!playing || !input) return;
+	accuseAnswers[input.dataset.question] = input.value;
+	// Keep the inputs in place so keyboard focus and scroll position survive.
+	document.querySelectorAll('.ac-choice input').forEach(radio => radio.closest('.ac-choice').classList.toggle('selected', radio.checked));
+	document.querySelector('[data-slot="cb-result"]').textContent = '';
+	updateAnswerProgress();
 });
 
+
+// Keep keyboard focus inside the final-theory dialog and return safely.
+document.querySelector('[data-slot="accusescreen"]').addEventListener('keydown', event => {
+	if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeAccuseScreen(); return; }
+	if (event.key !== 'Tab') return;
+	const focusable = [...event.currentTarget.querySelectorAll('button:not(:disabled), input:not(:disabled)')];
+	const first = focusable[0], last = focusable[focusable.length - 1];
+	if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+	else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+});
 
 // Which suspect the board is showing, and whether the basket drawer is up.
 let sbIndex = 0;
@@ -427,8 +455,7 @@ document.querySelector('[data-slot="suspectboard"]').addEventListener('click', e
 	if (un) { const [key, sq] = un.dataset.unassign.split(':'); unassign(key, Number(sq)); }
 });
 
-const story = () => STORIES[settings.story] || STORIES.s1;
-const level = () => LEVELS[settings.level] || LEVELS.easy;
+const story = () => STORIES.s1;
 const timerOn = () => settings.timer === 'on';
 
 // ── menu ─────────────────────────────────────────────────────────
@@ -438,26 +465,35 @@ const menu = createMenu({
 	audio,
 	onSetting: applySetting,
 	onPaint: paintDynamic,
+	/**
+	 * Route a menu button to its action. The result screen has no way back into
+	 * the case, only `quit` to the title.
+	 * @param {string} act - The button's `data-act` value.
+	 * @param {HTMLElement} el - The button that was activated.
+	 * @returns {void}
+	 */
 	onAction: (act, el) => {
 		if (act === 'stories') menu.show('story', { push: true });
-		else if (act === 'start') menu.show('difficulty', { push: true });
+		else if (act === 'start') menu.show('story', { push: true });
 		else if (act === 'story') pickStory(el.dataset.id);
-		else if (act === 'level') pickLevel(el.dataset.id);
 		else if (act === 'settings') menu.show('settings', { push: true });
-		else if (act === 'continue') menu.show('difficulty', { push: true });
+		else if (act === 'continue') openIntro();
 		else if (act === 'begin') { clearInterval(countdownTimer); audio.startTrack(); beginTravel(); }
-		else if (act === 'retry') startGame();
 		else if (act === 'quit') toTitle();
 		else if (act === 'close') menu.show('title');
 	}
 });
 
 function paintDynamic() {
-	document.querySelectorAll('[data-act="story"]').forEach(el =>
-		el.classList.toggle('picked', el.dataset.id === settings.story));
+	document.querySelectorAll('[data-act="story"]').forEach(el => {
+		el.disabled = el.dataset.id !== 's1';
+		el.classList.toggle('picked', !el.disabled && el.dataset.id === settings.story);
+		if (el.disabled) el.querySelector('.ctease').textContent = 'Coming soon — this case is not yet available.';
+	});
 }
 
 function pickStory(id) {
+	if (id !== 's1') return;
 	settings.story = id;
 	menu.save();
 	menu.paint();
@@ -491,7 +527,7 @@ function fillCasefile(s) {
 	document.querySelector('[data-slot="cf-mission"]').innerHTML =
 		b.mission.map(m => `<p class="mission-line">${m}</p>`).join('');
 	document.querySelector('[data-slot="cf-mechanics"]').innerHTML =
-		b.mechanics.replace(/(Dig In|Hold|Discard|5 minutes)/g, '<b>$1</b>');
+		b.mechanics.replace(/(Dig In|Add to Basket|Discard|5 minutes)/g, '<b>$1</b>');
 }
 
 // ── launch countdown ───────────────────────────────────────────
@@ -500,14 +536,11 @@ let countdownTimer = null;
 
 function fillIntro() {
 	const s = story();
-	const l = level();
 	menu.slot('intro-over', `Case File · ${s.label}`);
 	menu.slot('intro-title', s.name);
 	document.querySelector('[data-slot="intro-meta"]').innerHTML = [
 		['Case', s.name],
-		['Difficulty', l.label],
-		['Evidence', `${l.clues} clues hidden at the scene`],
-		['Time', timerOn() ? `${fmt(l.time)} — every piece of information costs attention` : 'No time limit']
+		['Time', timerOn() ? `${fmt(LEVEL.time)} — every piece of information costs attention` : 'No time limit']
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
 }
 
@@ -535,9 +568,11 @@ function startCountdown() {
 	}, 1000);
 }
 
-function pickLevel(id) {
-	settings.level = id;
-	menu.save();
+/**
+ * Continue from the case briefing: fill the launch screen and start its countdown.
+ * @returns {void}
+ */
+function openIntro() {
 	fillIntro();
 	menu.show('intro', { push: true });
 	startCountdown();
@@ -578,6 +613,7 @@ document.getElementById('gear').addEventListener('click', () => {
  */
 function dealTiles(deck) {
 	tiles.clear();
+	discardedTiles.clear();
 	board.clearMarks();
 	evidencePieces.reset();
 	for (const key of Object.keys(assignments)) assignments[key] = [];
@@ -600,6 +636,7 @@ function dealTiles(deck) {
 		tile.held = false;
 		tile.placedTo = null;
 		tile.starred = false;
+		tile.discarded = false;
 		tiles.set(sq, tile);
 		evidencePieces.spawn(sq);
 	});
@@ -610,6 +647,10 @@ function dealTiles(deck) {
 
 let travelTimer = 0;
 
+// How long the "approaching the scene" passage lasts. Keep in step with the
+// .travel-bar animation in ui.css.
+const TRAVEL_MS = 1500;
+
 function beginTravel() {
 	menu.hide();
 	document.getElementById('travel').hidden = false;
@@ -617,27 +658,32 @@ function beginTravel() {
 	travelTimer = setTimeout(() => {
 		document.getElementById('travel').hidden = true;
 		startGame();
-	}, 5000);
+	}, TRAVEL_MS);
 }
 
+/**
+ * Begin play: deal the chosen story's deck, reset the counters, stars and clock,
+ * and hand control to the player. Also keeps the full deck for the end-of-case
+ * evaluation, since discarded tiles leave the board.
+ * @returns {void}
+ */
 function startGame() {
 	const s = story();
-	const l = level();
 	const deck = buildDeck(s);
 	needed = deck.length;
 	dugCount = 0;
 	discardedCount = 0;
 	elapsed = 0;
-	timeLeft = l.time;
+	timeLeft = LEVEL.time;
 	dealTiles(deck);
 	renderStars();
 	playing = true;
 	audio.startTrack();
 	menu.hide();
 	hud.show();
-	hud.setCase(s.name, l.label);
-	hud.setClues(0, needed);
-	hud.setTimer(timerOn() ? timeLeft : null);
+	hud.setCase(s.name);
+	hud.setClues(needed);
+	hud.setTimer(timerOn() ? timeLeft : null, LEVEL.time);
 	hud.setHint('Drag to look around · Tap a piece to examine it');
 	stage.setAttract(false);
 }
@@ -658,37 +704,44 @@ function toTitle() {
 	menu.show('title');
 }
 
-function endCase(solved) {
+/**
+ * End the case and go straight to the results analysis. Called once, either when
+ * the final answers are submitted or when the clock runs out; there is no way
+ * back into the case from the result screen, only back to the title.
+ * @param {boolean} solved - True when both accusation answers were right.
+ * @param {'submitted'|'timeout'} reason - What ended the case.
+ * @returns {void}
+ */
+function endCase(solved, reason = 'submitted') {
+	if (!playing) return;
 	playing = false;
 	audio.stopTrack();
 	if (solved) audio.solve(); else audio.fail();
-
 	const titleEl = document.querySelector('[data-slot="result-title"]');
-	titleEl.textContent = solved ? 'CASE SOLVED' : 'CASE COLD';
+	titleEl.textContent = solved ? 'CASE SOLVED' : reason === 'timeout' ? 'TIME’S UP' : 'CASE REVIEW';
 	titleEl.classList.toggle('cold', !solved);
-	menu.slot('result-over', solved
-		? 'The snow gives up its secret'
-		: 'The trail went cold · the snow covered the rest');
-
-	const l = level();
+	menu.slot('result-over', reason === 'timeout' ? 'Time ran out · case review' : 'Answers submitted · case review');
+	const records = [...tiles.values(), ...discardedTiles.values()];
+	renderCaseReport(document.querySelector('[data-slot="case-report"]'), {
+		records, questions: QUESTIONS, answers: accuseAnswers, solutionAvailable: story() === STORIES.s1, elapsed, limit: timerOn() ? LEVEL.time : null, timedOut: reason === 'timeout'
+	});
 	document.querySelector('[data-slot="result-stats"]').innerHTML = [
-		['Case', story().name],
-		['Evidence dug', `${dugCount} / ${needed}`],
-		['Discarded', discardedCount],
-		['Time in the snow', fmt(elapsed)]
+		['Case', story().name], ['Evidence dug', `${dugCount} / ${needed}`],
+		['Time investigating', fmt(elapsed)], ['Discarded', discardedTiles.size],
+		['Starred', records.filter(t => t.starred && !t.discarded).length],
+		['Placed on suspects', records.filter(t => t.placedTo && !t.discarded).length]
 	].map(([k, v]) => `<div><span>${k}</span><b>${v}</b></div>`).join('');
-
-	setTimeout(() => {
-		hud.hide();
-		hud.hideTile();
-		document.querySelector('[data-slot="suspectboard"]').hidden = true;
-		document.querySelector('[data-slot="accusescreen"]').hidden = true;
-		tiles.clear();
-		board.clearMarks();
-		evidencePieces.reset();
-		stage.setAttract(true);
-		menu.show('result');
-	}, 1100);
+	hud.hide();
+	hud.hideTile();
+	document.querySelector('[data-slot="suspectboard"]').hidden = true;
+	document.querySelector('[data-slot="accusescreen"]').hidden = true;
+	board.clearMarks();
+	evidencePieces.reset();
+	stage.setAttract(true);
+	menu.show('result');
+	document.querySelector('.screen[data-screen="result"]').scrollTop = 0;
+	titleEl.setAttribute('tabindex', '-1');
+	titleEl.focus({ preventScroll: true });
 }
 
 // ── pointer ──────────────────────────────────────────────────────
@@ -770,6 +823,14 @@ addEventListener('keydown', event => {
 
 let timerPaint = 0;
 
+/**
+ * Per-frame update: animates the scene and, while a case is being played,
+ * advances the clock, ends the case with a timeout when the countdown reaches
+ * zero, and repaints the timer.
+ * @param {number} dt - Seconds since the last frame.
+ * @param {number} time - Total elapsed seconds.
+ * @returns {void}
+ */
 stage.onUpdate((dt, time) => {
 	lighting.update(dt, time);
 	sky.update(dt, time);
@@ -784,21 +845,20 @@ stage.onUpdate((dt, time) => {
 		elapsed += dt;
 		if (timerOn()) {
 			timeLeft -= dt;
-			if (timeLeft <= 0) { endCase(false); return; }
+			if (timeLeft <= 0) { endCase(false, 'timeout'); return; }
 		}
 		timerPaint += dt;
 		if (timerPaint > 0.2) {
 			timerPaint = 0;
-			if (timerOn()) hud.setTimer(timeLeft);
+			if (timerOn()) hud.setTimer(timeLeft, LEVEL.time);
 		}
 	}
 });
 
 // ── boot ─────────────────────────────────────────────────────────
 
-// Deep links for testing: ?screen=story|difficulty|settings|intro|casefile, ?play=1
+// Deep links for testing: ?screen=story|settings|intro|casefile, ?play=1
 const params = new URLSearchParams(location.search);
-if (params.get('level') && LEVELS[params.get('level')]) settings.level = params.get('level');
 if (params.get('play')) {
 	fillIntro();
 	startGame();

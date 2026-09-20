@@ -5,7 +5,8 @@ export function createHud({ onTool }) {
 	const toastBox = $('toast');
 	const hint = $('hint');
 	const timerEl = $('hud-timer');
-	const pips = $('hud-pips');
+	const fuse = $('hud-fuse');
+	const fuseLine = $('hud-fuse-line');
 
 	let toastTimer = 0;
 	let hintTimer = 0;
@@ -19,13 +20,18 @@ export function createHud({ onTool }) {
 		show() { root.hidden = false; },
 		hide() { root.hidden = true; },
 
-		setCase(storyName, diffLabel) {
+		setCase(storyName) {
 			$('hud-story').textContent = storyName;
-			$('hud-diff').textContent = diffLabel;
 		},
 
-		// null hides the timer entirely (Timer: off in settings).
-		setTimer(seconds) {
+		/**
+		 * Show the countdown: the time as text and a fuse under it that burns down
+		 * from full to nothing. A null time hides both (Timer: off in settings).
+		 * @param {number|null} seconds - Time left, or null to hide the timer.
+		 * @param {number} [limit] - The full time allowed, for the fuse length.
+		 * @returns {void}
+		 */
+		setTimer(seconds, limit = 0) {
 			if (seconds === null) {
 				timerEl.parentElement.classList.add('no-timer');
 				return;
@@ -34,12 +40,17 @@ export function createHud({ onTool }) {
 			const total = Math.max(0, Math.ceil(seconds));
 			timerEl.textContent = `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
 			timerEl.classList.toggle('low', total <= 30);
+			fuse.classList.toggle('low', total <= 30);
+			fuseLine.style.width = `${limit ? Math.min(100, Math.max(0, seconds / limit * 100)) : 100}%`;
 		},
 
-		setClues(found, total) {
-			pips.innerHTML = Array.from({ length: total }, (_, i) =>
-				`<i class="${i < found ? 'got' : ''}"></i>`).join('');
-			$('hud-clues').textContent = `Clues ${found} / ${total}`;
+		/**
+		 * Show how many pieces of evidence are on the board.
+		 * @param {number} total - Pieces of evidence dealt.
+		 * @returns {void}
+		 */
+		setClues(total) {
+			$('hud-clues').textContent = `Clues: ${total}`;
 		},
 
 		toast(text, ms = 3400) {

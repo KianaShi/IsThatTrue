@@ -8,7 +8,7 @@ export const OPTIONS = {
 	snow: [{ id: 'heavy', label: 'Heavy' }, { id: 'light', label: 'Light' }, { id: 'off', label: 'Off' }]
 };
 
-const DEFAULTS = { story: 's1', level: 'easy', music: 'on', sound: 'on', timer: 'on', quality: 'high', snow: 'heavy' };
+const DEFAULTS = { story: 's1', music: 'on', sound: 'on', timer: 'on', quality: 'high', snow: 'heavy' };
 
 export function loadSettings() {
 	try {
@@ -27,7 +27,7 @@ export function createMenu({ settings, onAction, onSetting, onPaint, audio }) {
 	let index = 0;
 	let stack = [];
 
-	const items = () => current ? [...screens.get(current).querySelectorAll('.mi')] : [];
+	const items = () => current ? [...screens.get(current).querySelectorAll('.mi:not(:disabled)')] : [];
 
 	function paint() {
 		items().forEach((el, i) => {

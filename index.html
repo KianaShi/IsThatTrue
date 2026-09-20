@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Murder Mystery</title>
-<meta name="description" content="Murder Mystery — a snowbound whodunit. Pick a case, choose your pressure, and find every clue before the trail goes cold.">
+<title>Red Herring</title>
+<meta name="description" content="Red Herring — a whodunit about a leak the night before a launch. Pick a case, choose your pressure, and decide which clues to trust before time runs out.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23070c15'/%3E%3Ccircle cx='16' cy='18' r='9' fill='none' stroke='%23d40027' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='14' r='3' fill='%23ff3860'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="./src/ui/ui.css">
+<link rel="stylesheet" href="./src/ui/ui.css?v=question-results-1">
 </head>
 <body data-screen="">
 
@@ -25,15 +25,14 @@
 	<section class="screen" data-screen="title">
 		<div class="col">
 			<header class="masthead">
-				<p class="overline">Case File · Winter Circuit</p>
-				<h1 class="title">MURDER<br><b>MYSTERY</b></h1>
-				<p class="tagline">A snowbound clearing. One lantern still burning.<br>The snow saw everything — make it talk.</p>
+				<p class="overline">Case File · Confidential</p>
+				<h1 class="title">RED<br><b>HERRING</b></h1>
+				<p class="tagline">Four suspects. One leak, hours before launch.<br>Not every clue tells the truth.</p>
 			</header>
 			<nav class="menu" data-menu="title">
-				<button class="mi big" data-act="stories"><i></i><span>Story</span><em class="arr">›</em></button>
-				<button class="mi big primary" data-act="start"><i></i><span>Game Start</span><em class="arr">›</em></button>
+				<button class="mi big" data-act="start"><i></i><span>Game Start</span><em class="arr">›</em></button>
 			</nav>
-			<p class="foot">Tap to choose · ↑↓ Enter on keyboard</p>
+			<p class="foot">Tap to start · Enter on keyboard</p>
 		</div>
 	</section>
 
@@ -65,24 +64,6 @@
 				</button>
 				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
 			</nav>
-		</div>
-	</section>
-
-	<!-- ── difficulty select ─────────────────────────────────── -->
-	<section class="screen" data-screen="difficulty">
-		<div class="col">
-			<header class="masthead">
-				<p class="overline">Choose the pressure</p>
-				<h2 class="subtitle">DIFFICULTY</h2>
-			</header>
-			<nav class="menu" data-menu="difficulty">
-				<button class="mi row" data-act="level" data-id="easy"><i></i><span>Easy</span><b class="meta">3 clues · 5:00</b></button>
-				<button class="mi row" data-act="level" data-id="medium"><i></i><span>Medium</span><b class="meta">4 clues · 4:00</b></button>
-				<button class="mi row" data-act="level" data-id="hard"><i></i><span>Hard</span><b class="meta">5 clues · 3:00</b></button>
-				<button class="mi row hell" data-act="level" data-id="hell"><i></i><span>Hell</span><b class="meta">6 clues · 2:00</b></button>
-				<button class="mi ghostbtn" data-act="back"><i></i><span>‹ Back</span></button>
-			</nav>
-			<p class="foot">More clues, less time — the snow won’t wait</p>
 		</div>
 	</section>
 
@@ -153,13 +134,13 @@
 	<section class="screen" data-screen="result">
 		<div class="col">
 			<header class="masthead">
-				<p class="overline" data-slot="result-over">Case closed</p>
-				<h2 class="title res" data-slot="result-title">CASE SOLVED</h2>
+				<p class="overline" data-slot="result-over">Answers submitted</p>
+				<h2 class="title res" data-slot="result-title">CASE CLOSED</h2>
 			</header>
+			<div class="case-report" data-slot="case-report"></div>
 			<div class="stats" data-slot="result-stats"></div>
 			<nav class="menu" data-menu="result">
-				<button class="mi big primary" data-act="retry"><i></i><span>Retry the Case</span><em class="arr">›</em></button>
-				<button class="mi ghostbtn" data-act="quit"><i></i><span>‹ Back to Title</span></button>
+				<button class="mi ghostbtn" data-act="quit"><i></i><span>Back to Title</span></button>
 			</nav>
 		</div>
 	</section>
@@ -171,18 +152,17 @@
 
 	<div class="hud-case">
 		<span class="hud-story" data-slot="hud-story">The Leak</span>
-		<span class="hud-diff" data-slot="hud-diff">Easy</span>
-		<span class="hud-clues" data-slot="hud-clues">Clues 0 / 3</span>
+		<span class="hud-clues" data-slot="hud-clues">Clues: 32</span>
 		<div class="hud-stars" data-slot="hud-stars"></div>
 	</div>
 
 	<div class="hud-mid">
 		<div class="hud-timer" data-slot="hud-timer">6:00</div>
-		<div class="hud-pips" data-slot="hud-pips"></div>
+		<div class="hud-fuse" data-slot="hud-fuse"><div class="hud-fuse-line" data-slot="hud-fuse-line"></div></div>
 	</div>
 
-	<button class="tb hud-abandon" data-tool="abandon" title="Abandon the case" aria-label="Abandon the case">
-		<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+	<button class="tb hud-abandon" data-tool="abandon" title="Exit" aria-label="Exit">
+		<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 2.5h-3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h3"/><path d="M10.5 5 13.5 8l-3 3"/><path d="M13.5 8h-7"/></svg>
 	</button>
 
 	<button class="tb hud-suspects" data-tool="suspects" title="Open the suspect board" aria-label="Open the suspect board">
@@ -256,17 +236,20 @@
 	</div>
 
 	<!-- the real answer, on its own screen — separate from the thinking board -->
-	<div class="accusescreen" data-slot="accusescreen" hidden>
+	<div class="accusescreen" data-slot="accusescreen" role="dialog" aria-modal="true" aria-labelledby="final-theory-title" hidden>
 		<div class="ac-card">
 			<div class="sb-head">
-				<p class="sb-title">Checkmate?</p>
+				<h2 class="sb-title" id="final-theory-title">Your final theory</h2>
 				<button class="tb sb-close" data-tool="close-accuse" aria-label="Back to the board">
 					<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l8 8M12 4l-8 8"/></svg>
 				</button>
 			</div>
+			<p class="ac-intro">Choose one answer for each question. You can return to the board before submitting.</p>
+			<p class="ac-progress" data-slot="ac-progress" aria-live="polite">0 of 5 answered</p>
 			<div class="ac-questions" data-slot="ac-questions"></div>
-			<button class="cb-submit" data-tool="submit">Submit Accusation</button>
-			<p class="cb-result" data-slot="cb-result"></p>
+			<p class="ac-submit-note">Submitting ends this round and reveals the full solution.</p>
+			<button class="cb-submit" data-tool="submit">Submit final theory</button>
+			<p class="cb-result" data-slot="cb-result" role="status"></p>
 		</div>
 	</div>
 
@@ -280,7 +263,7 @@
 </div>
 
 <div id="boot">
-	<p class="overline">Murder Mystery</p>
+	<p class="overline">Red Herring</p>
 	<p class="boot-msg" data-slot="boot">Lighting the lanterns…</p>
 </div>
 
