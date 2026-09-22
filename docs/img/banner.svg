@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" width="1200" height="360" role="img" aria-label="Red Herring — a chess-themed detective game">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#05070f"/><stop offset="1" stop-color="#151a2b"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.78" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ff2d55" stop-opacity="0.35"/><stop offset="1" stop-color="#ff2d55" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="sq" width="60" height="60" patternUnits="userSpaceOnUse">
+      <rect width="30" height="30" fill="#ffffff" fill-opacity="0.035"/><rect x="30" y="30" width="30" height="30" fill="#ffffff" fill-opacity="0.035"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="360" fill="url(#bg)"/>
+  <rect width="1200" height="360" fill="url(#sq)"/>
+  <rect width="1200" height="360" fill="url(#glow)"/>
+  <g font-family="'Geist Mono','SF Mono',Consolas,monospace" fill="#e9ecf5">
+    <text x="80" y="110" font-size="15" letter-spacing="8" fill="#8b93a7">DEFENSE TECH JAM 2026</text>
+    <text x="80" y="200" font-size="84" font-weight="700" letter-spacing="10">RED</text>
+    <text x="80" y="285" font-size="84" font-weight="700" letter-spacing="10" fill="#ff2d55">HERRING</text>
+    <text x="440" y="285" font-size="17" letter-spacing="3" fill="#8b93a7">Not every clue is what it seems.</text>
+  </g>
+  <!-- herring -->
+  <g transform="translate(820 150)" fill="#ff2d55">
+    <path d="M0 60 C60 -10 170 -10 230 60 C170 130 60 130 0 60 Z"/>
+    <path d="M230 60 L290 15 L275 60 L290 105 Z"/>
+    <circle cx="48" cy="52" r="7" fill="#05070f"/>
+    <path d="M90 25 Q130 60 90 95 M130 22 Q170 60 130 98" stroke="#05070f" stroke-opacity="0.35" stroke-width="3" fill="none"/>
+  </g>
+  <!-- pawn -->
+  <g transform="translate(1040 70)" fill="#e9ecf5" fill-opacity="0.9">
+    <circle cx="40" cy="30" r="22"/>
+    <path d="M22 52 h36 l10 60 h-56 Z"/>
+    <rect x="6" y="112" width="68" height="14" rx="4"/>
+  </g>
+</svg>
