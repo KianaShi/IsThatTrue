@@ -94,7 +94,7 @@ npm test
 
 ## 🗂️ Project layout
 
-```
+```text
 index.html        all screens + HUD markup
 src/
   game/           cases, questions, scoring, evidence state, 3D board

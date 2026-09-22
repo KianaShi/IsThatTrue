@@ -4,7 +4,7 @@ Red Herring is a static, no-build browser game: plain ES modules, [three.js](htt
 
 The game grew out of a procedural 3D chess renderer, so the chess engine, the scene, and the detective layer are three fairly independent pieces.
 
-```
+```text
 index.html              markup for every screen and the HUD
 src/
   main.js               wiring: builds the world, binds input, runs the loop, ends the case
