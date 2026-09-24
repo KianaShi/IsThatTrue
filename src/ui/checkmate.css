@@ -1,0 +1,11 @@
+/* Checkmate flow refinements; preserve the existing question and result theme. */
+.ac-card { overscroll-behavior: contain; }
+.ac-card > * { flex-shrink: 0; }
+.ac-choice { min-height: 44px; }
+
+/* Long result headings must fit narrow screens without horizontal overflow. */
+.screen[data-screen="result"] .title.res {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.screen[data-screen="result"] .masthead { margin-bottom: 0; }
